@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listEmployees } from "./api";
+import { ApiError, listEmployees } from "./api";
 
 function mockFetch(status: number, body: unknown) {
   const fn = vi.fn().mockResolvedValue({ ok: status >= 200 && status < 300, status, json: async () => body });
@@ -21,5 +21,23 @@ describe("listEmployees", () => {
       expect.objectContaining({ headers: expect.objectContaining({ Accept: "application/json" }) }),
     );
     expect(result).toEqual(body);
+  });
+});
+
+describe("error handling", () => {
+  it("throws an ApiError carrying the status and the server's message", async () => {
+    mockFetch(404, { error: "Employee not found" });
+    await expect(listEmployees()).rejects.toMatchObject({ name: "ApiError", status: 404, message: "Employee not found" });
+  });
+
+  it("falls back to a generic message when the body has no error text", async () => {
+    mockFetch(500, {});
+    await expect(listEmployees()).rejects.toThrow("Request failed (500)");
+  });
+
+  it("explains network failures in plain language", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    await expect(listEmployees()).rejects.toThrow("Could not reach the server");
+    await expect(listEmployees()).rejects.toBeInstanceOf(ApiError);
   });
 });
