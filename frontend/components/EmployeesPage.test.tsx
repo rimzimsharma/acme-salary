@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils";
@@ -133,5 +133,40 @@ describe("EmployeesPage", () => {
       expect(await screen.findByText("1 employee")).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "2" })).not.toBeInTheDocument();
     });
+  });
+
+  describe("sorting", () => {
+    it("sorts by a column on click and flips direction on the second click", async () => {
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+
+      await userEvent.click(screen.getByRole("button", { name: "Name" }));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "full_name", dir: "asc" })));
+
+      await userEvent.click(screen.getByRole("button", { name: "Name" }));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "full_name", dir: "desc" })));
+      expect(screen.getByRole("columnheader", { name: /Name/ })).toHaveAttribute("aria-sort", "descending");
+    });
+
+    it("only offers salary sorting within one country, because currencies are not comparable", async () => {
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      expect(screen.queryByRole("button", { name: "Salary" })).not.toBeInTheDocument();
+
+      await userEvent.selectOptions(await screen.findByLabelText("Country"), "India");
+      await userEvent.click(await screen.findByRole("button", { name: "Salary" }));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "annual_salary", country: "India" })));
+    });
+  });
+
+  it("shows department, country, seniority and flags people who have left", async () => {
+    vi.mocked(api.listEmployees).mockResolvedValue(page([asha, { ...asha, id: 2, full_name: "Left Co", email: "l@acme.test", active: false }]));
+    renderWithProviders(<EmployeesPage />);
+    await screen.findByText("Left Co");
+    const table = within(screen.getByRole("table"));
+    expect(table.getAllByText("Engineering")).toHaveLength(2);
+    expect(table.getAllByText("India")).toHaveLength(2);
+    expect(table.getAllByText("mid")).toHaveLength(2);
+    expect(table.getByText("Inactive")).toBeInTheDocument();
   });
 });

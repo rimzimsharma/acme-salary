@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Button, Group, NativeSelect, Pagination, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Badge, Button, Group, NativeSelect, Pagination, Table, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { getFilterOptions, listEmployees } from "@/lib/api";
@@ -17,7 +17,8 @@ export function EmployeesPage() {
   const [filters, setFilters] = useState({ country: "", department: "", seniority: "", status: "active" });
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [page, setPage] = useState(1);
-  const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, page, status: filters.status as EmployeeSearchParams["status"] };
+  const [sort, setSort] = useState<{ column: string; dir: "asc" | "desc" } | null>(null);
+  const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, page, sort: sort?.column, dir: sort?.dir, status: filters.status as EmployeeSearchParams["status"] };
   const paramsKey = JSON.stringify(params);
 
   useEffect(() => setPage(1), [debouncedSearch]);
@@ -43,6 +44,14 @@ export function EmployeesPage() {
   }, [attempt, paramsKey]);
 
   const { status, employees, error, meta } = state;
+
+  const toggleSort = (column: string) => {
+    setSort((current) => ({ column, dir: current?.column === column && current.dir === "asc" ? "desc" : "asc" }));
+    setPage(1);
+  };
+  const header = (label: string, column: string, enabled = true) => (
+    <SortableTh label={label} active={sort?.column === column ? sort.dir : null} enabled={enabled} onSort={() => toggleSort(column)} />
+  );
 
   return (
     <>
@@ -75,10 +84,14 @@ export function EmployeesPage() {
         <Table>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Job title</Table.Th>
-              <Table.Th>Salary</Table.Th>
+              {header("Name", "full_name")}
+              {header("Job title", "job_title")}
+              {header("Department", "department")}
+              {header("Country", "country")}
+              <Table.Th>Seniority</Table.Th>
+              {header("Salary", "annual_salary", filters.country !== "")}
               <Table.Th>Salary (USD)</Table.Th>
+              <Table.Th>Status</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -89,8 +102,12 @@ export function EmployeesPage() {
                   <div>{e.email}</div>
                 </Table.Td>
                 <Table.Td>{e.job_title}</Table.Td>
+                <Table.Td>{e.department}</Table.Td>
+                <Table.Td>{e.country}</Table.Td>
+                <Table.Td>{e.seniority}</Table.Td>
                 <Table.Td>{formatMoney(e.annual_salary, e.currency)}</Table.Td>
                 <Table.Td>{formatMoney(e.annual_salary_usd, "USD")}</Table.Td>
+                <Table.Td>{e.active ? "Active" : <Badge color="gray">Inactive</Badge>}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -116,5 +133,20 @@ function FilterSelect({ label, value, values = [], onChange }: { label: string; 
       onChange={(e) => onChange(e.currentTarget.value)}
       data={[{ value: "", label: `All` }, ...values.map((v) => ({ value: v, label: v }))]}
     />
+  );
+}
+
+function SortableTh({ label, active, enabled, onSort }: { label: string; active: "asc" | "desc" | null; enabled: boolean; onSort: () => void }) {
+  if (!enabled) {
+    return <Table.Th title="Select a country to sort by salary (currencies differ)">{label}</Table.Th>;
+  }
+  const ariaSort = active === "asc" ? "ascending" : active === "desc" ? "descending" : "none";
+  return (
+    <Table.Th aria-sort={ariaSort}>
+      <UnstyledButton onClick={onSort} fw={600} fz="sm">
+        {label}
+        {active && <span aria-hidden> {active === "asc" ? "▲" : "▼"}</span>}
+      </UnstyledButton>
+    </Table.Th>
   );
 }
