@@ -29,4 +29,6 @@ test:
 # ensure the database is located in a persisted volume.
 production:
   <<: *default
-  # database: path/to/persistent/storage/production.sqlite3
+  # On hosts with a temporary disk the data is recreated on start (see render.yaml);
+  # set DATABASE_PATH to a persistent disk to keep data between restarts.
+  database: <%= ENV.fetch("DATABASE_PATH", "db/production.sqlite3") %>
