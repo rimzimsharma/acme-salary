@@ -16,4 +16,9 @@ class CurrencyRatesTest < ActiveSupport::TestCase
   test "every currency an employee can have has a reference rate" do
     assert_empty Employee::CURRENCIES - CurrencyRates::PER_USD.keys
   end
+
+  test "rounds to the nearest dollar rather than truncating" do
+    assert_equal 1, CurrencyRates.to_usd(100, "INR") # 1.20 -> 1
+    assert_equal 2, CurrencyRates.to_usd(125, "INR") # 1.51 -> 2 (a floor would give 1)
+  end
 end
