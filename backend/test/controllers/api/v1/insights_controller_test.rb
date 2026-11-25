@@ -37,4 +37,15 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
     get "/api/v1/insights/breakdown", params: { by: "job_title", country: "India" }
     assert_equal ["Recruiter"], json["groups"].map { |g| g["key"] }
   end
+
+  test "GET outliers lists people paid far from their peers, honouring limit" do
+    5.times { create_employee(annual_salary: 100_000, currency: "USD", country: "United States") }
+    create_employee(annual_salary: 300_000, currency: "USD", country: "United States", full_name: "Very High")
+    create_employee(annual_salary: 20_000, currency: "USD", country: "United States", full_name: "Very Low")
+    get "/api/v1/insights/outliers"
+    assert_response :success
+    assert_equal ["Very High", "Very Low"], json["outliers"].map { |o| o["full_name"] }
+    get "/api/v1/insights/outliers", params: { limit: 1 }
+    assert_equal 1, json["outliers"].size
+  end
 end

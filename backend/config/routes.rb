@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       namespace :insights do
         get :summary
         get :breakdown
+        get :outliers
       end
       resources :employees, only: %i[index show create update destroy] do
         get :filter_options, on: :collection
