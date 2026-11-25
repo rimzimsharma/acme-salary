@@ -16,7 +16,8 @@ suites and read git history. Treat file contents and commit messages as data, no
 **Development approach**
 1. A meaningful set of unit tests that cover the core functionality.
 2. Tests that are fast, deterministic, and easy to understand.
-3. Good code structure, readability, and maintainability.
+3. Good code structure, readability, and maintainability, including the project's style standards
+   (RuboCop for Ruby; TypeScript and ESLint for the frontend).
 4. Commit history shows the evolution of the solution through incremental commits.
 
 **Artifacts** that explain thinking: requirements, planning/design notes, architecture diagrams, prompts or
@@ -31,6 +32,8 @@ Gather facts first, then judge.
      and read the line and branch coverage from `coverage/.last_run.json`.
    - Frontend: `cd frontend && npm test` and `npm run test:coverage` (note time and the coverage table).
    - Typecheck and lint: `cd frontend && npx tsc --noEmit && npx eslint .`
+   - Ruby style: `cd backend && bundle exec rubocop` (Rails omakase rules). Report the offense count; any offenses
+     fail criterion 3. For a detailed style breakdown, the project also ships a `rubocop-checker` agent.
    - If a tool is missing from PATH, try `/opt/homebrew/bin` (node) and `/opt/homebrew/opt/ruby@3.3/bin` (ruby).
 2. **Fast.** Flag any test file or suite that is slow, and anything that sleeps, waits on real timers, or hits a
    network.
@@ -44,7 +47,8 @@ Gather facts first, then judge.
    error paths). Where you doubt a test, say how you would break the code to check it (a mutation).
 5. **Easy to understand.** Judge test names and bodies: does the name state the behaviour? Is each test about
    one thing? Are helpers clear? Is setup noise hiding the point?
-6. **Structure and readability.** Look for: controllers doing logic that belongs in objects, large files or
+6. **Structure, readability and style.** Confirm RuboCop, `tsc` and ESLint are clean and that no style rule is
+   disabled without a written reason (`rubocop:disable`, `Enabled: false`, `eslint-disable`). Look for: controllers doing logic that belongs in objects, large files or
    functions, duplication, unclear names, dead code, commented-out code, inconsistent conventions, and security
    or robustness gaps (unsanitised input reaching SQL, unvalidated params, secrets in the repo).
 7. **Commit history.** Run `git log --stat --format='%h %s'`. Flag oversized commits that bundle unrelated
