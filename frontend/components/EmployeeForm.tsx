@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Group, Modal, NativeSelect, NumberInput, Stack, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, NativeSelect, NumberInput, Stack, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { createEmployee } from "@/lib/api";
+import { useState } from "react";
+import { ValidationError, createEmployee } from "@/lib/api";
 import type { Employee, EmployeeInput, Seniority } from "@/lib/types";
 
 const required = (value: unknown) => (value === "" || value === null || value === undefined ? "Required" : null);
@@ -32,15 +33,32 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
     },
   });
 
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const submit = form.onSubmit(async (values) => {
-    const saved = await createEmployee({ ...values, annual_salary: Number(values.annual_salary) } as EmployeeInput);
-    onSaved(saved);
+    setFormError(null);
+    setSaving(true);
+    try {
+      const saved = await createEmployee({ ...values, annual_salary: Number(values.annual_salary) } as EmployeeInput);
+      onSaved(saved);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        // Show each server message next to its field; keep everything the user typed.
+        form.setErrors(Object.fromEntries(Object.entries(error.errors).map(([field, messages]) => [field, messages.join(", ")])));
+      } else {
+        setFormError(error instanceof Error ? error.message : "Something went wrong");
+      }
+    } finally {
+      setSaving(false);
+    }
   });
 
   return (
     <Modal opened={opened} onClose={onClose} title="Add employee" transitionProps={{ duration: 0 }}>
       <form onSubmit={submit}>
         <Stack>
+          {formError && <Alert color="red">{formError}</Alert>}
           <TextInput label="Full name" {...form.getInputProps("full_name")} />
           <TextInput label="Email" {...form.getInputProps("email")} />
           <TextInput label="Job title" {...form.getInputProps("job_title")} />
@@ -52,7 +70,7 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
           <TextInput label="Hire date" type="date" {...form.getInputProps("hire_date")} />
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit" loading={saving}>Save</Button>
           </Group>
         </Stack>
       </form>

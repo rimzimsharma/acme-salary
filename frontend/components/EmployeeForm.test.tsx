@@ -2,6 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "@/lib/api";
+import { ValidationError } from "@/lib/api";
 import type { Employee } from "@/lib/types";
 import { renderWithProviders } from "@/test-utils";
 import { EmployeeForm } from "./EmployeeForm";
@@ -79,5 +80,27 @@ describe("EmployeeForm validation", () => {
     expect(await screen.findByText("Enter a valid email address")).toBeInTheDocument();
     expect(screen.getByText("Hire date cannot be in the future")).toBeInTheDocument();
     expect(api.createEmployee).not.toHaveBeenCalled();
+  });
+});
+
+describe("EmployeeForm server errors", () => {
+  it("shows the server's field messages and keeps the form open for correction", async () => {
+    vi.mocked(api.createEmployee).mockRejectedValue(new ValidationError({ email: ["has already been taken"] }));
+    const { onSaved, onClose } = open();
+    await fillValidForm();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("has already been taken")).toBeInTheDocument();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Full name/)).toHaveValue("Asha Rao"); // nothing the user typed is lost
+  });
+
+  it("explains non-validation failures such as a down server", async () => {
+    vi.mocked(api.createEmployee).mockRejectedValue(new api.ApiError(0, "Could not reach the server. Is the API running?"));
+    open();
+    await fillValidForm();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Could not reach the server. Is the API running?")).toBeInTheDocument();
   });
 });
