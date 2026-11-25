@@ -1,5 +1,8 @@
 class EmployeeSearch
   FILTERS = %i[country department job_title seniority].freeze
+  DEFAULT_PER_PAGE = 25
+  MAX_PER_PAGE = 100
+  SORTABLE = %w[full_name annual_salary hire_date country department seniority job_title].freeze
 
   Result = Struct.new(:records, :page, :per_page, :total, keyword_init: true)
 
@@ -8,7 +11,11 @@ class EmployeeSearch
   end
 
   def call
-    Result.new(records: by_text(by_filters(by_status(Employee.all))))
+    matches = by_text(by_filters(by_status(Employee.all)))
+    Result.new(
+      records: ordered(matches).limit(per_page).offset((page - 1) * per_page),
+      page: page, per_page: per_page, total: matches.count
+    )
   end
 
   private
@@ -21,6 +28,24 @@ class EmployeeSearch
 
     pattern = "%#{Employee.sanitize_sql_like(q.downcase)}%"
     scope.where("LOWER(full_name) LIKE :p ESCAPE '\\' OR LOWER(email) LIKE :p ESCAPE '\\'", p: pattern)
+  end
+
+  def page
+    @page ||= [@params[:page].to_i, 1].max
+  end
+
+  def per_page
+    @per_page ||= begin
+      requested = @params[:per_page].to_i
+      requested.positive? ? [requested, MAX_PER_PAGE].min : DEFAULT_PER_PAGE
+    end
+  end
+
+  # Only whitelisted columns reach ORDER BY; id breaks ties so paging is stable.
+  def ordered(scope)
+    column = SORTABLE.include?(@params[:sort].to_s) ? @params[:sort].to_s : "full_name"
+    direction = @params[:dir].to_s.downcase == "desc" ? :desc : :asc
+    scope.order(column => direction, id: :asc)
   end
 
   def by_filters(scope)

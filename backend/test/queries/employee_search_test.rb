@@ -51,4 +51,55 @@ class EmployeeSearchTest < ActiveSupport::TestCase
     assert_equal [literal], search(q: "100%").records.to_a
     assert_equal [literal], search(q: "l_N").records.to_a
   end
+
+  test "sorts by full_name ascending by default" do
+    b = create_employee(full_name: "Bela")
+    a = create_employee(full_name: "Anil")
+    assert_equal [a, b], search.records.to_a
+  end
+
+  test "sort and dir params reorder results" do
+    low = create_employee(annual_salary: 1_000_000)
+    high = create_employee(annual_salary: 3_000_000)
+    assert_equal [high, low], search(sort: "annual_salary", dir: "desc").records.to_a
+    assert_equal [low, high], search(sort: "annual_salary", dir: "asc").records.to_a
+  end
+
+  test "unknown sort column or direction falls back safely instead of reaching SQL" do
+    a = create_employee(full_name: "Anil")
+    b = create_employee(full_name: "Bela")
+    assert_equal [a, b], search(sort: "email; DROP TABLE employees", dir: "sideways").records.to_a
+    assert_equal 2, Employee.count
+  end
+
+  test "paginates with page and per_page and reports totals" do
+    7.times { |i| create_employee(full_name: format("Name %02d", i)) }
+    result = search(page: 2, per_page: 3)
+    assert_equal ["Name 03", "Name 04", "Name 05"], result.records.map(&:full_name)
+    assert_equal [2, 3, 7], [result.page, result.per_page, result.total]
+  end
+
+  test "defaults to page 1 with 25 per page" do
+    result = search
+    assert_equal [1, 25], [result.page, result.per_page]
+  end
+
+  test "per_page is capped at 100 and bad values fall back to defaults" do
+    assert_equal 100, search(per_page: 5_000).per_page
+    assert_equal 25, search(per_page: "abc").per_page
+    assert_equal 25, search(per_page: 0).per_page
+    assert_equal 1, search(page: -4).page
+    assert_equal 1, search(page: "x").page
+  end
+
+  test "a page past the end is empty, not an error" do
+    create_employee
+    assert_empty search(page: 9).records.to_a
+  end
+
+  test "total counts all matches, not just the current page" do
+    4.times { create_employee(country: "Japan", currency: "JPY") }
+    create_employee
+    assert_equal 4, search(country: "Japan", per_page: 2).total
+  end
 end
