@@ -252,4 +252,25 @@ describe("EmployeesPage", () => {
       expect(await screen.findByText("Employee not found")).toBeInTheDocument();
     });
   });
+
+  describe("out-of-order responses", () => {
+    it("ignores a slow, older response that arrives after a newer one", async () => {
+      let resolveSlow!: (value: ReturnType<typeof page>) => void;
+      const slow = new Promise<ReturnType<typeof page>>((resolve) => (resolveSlow = resolve));
+      const bob = { ...asha, id: 2, full_name: "Bob Newer", email: "bob@acme.test" };
+      vi.mocked(api.listEmployees).mockReset();
+      vi.mocked(api.listEmployees).mockReturnValueOnce(slow).mockResolvedValue(page([bob]));
+
+      renderWithProviders(<EmployeesPage />); // request 1 is in flight (slow)
+      await userEvent.selectOptions(await screen.findByLabelText("Status"), "all"); // request 2 starts and finishes
+      expect(await screen.findByText("Bob Newer")).toBeInTheDocument();
+
+      resolveSlow(page([asha])); // the old answer finally arrives
+      await waitFor(() => expect(api.listEmployees).toHaveBeenCalledTimes(2));
+      await new Promise((resolve) => setTimeout(resolve, 20)); // let any wrongly-applied update render
+
+      expect(screen.getByText("Bob Newer")).toBeInTheDocument();
+      expect(screen.queryByText("Asha Rao")).not.toBeInTheDocument();
+    });
+  });
 });
