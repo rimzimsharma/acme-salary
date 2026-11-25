@@ -3,6 +3,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      namespace :insights do
+        get :summary
+      end
       resources :employees, only: %i[index show create update destroy] do
         get :filter_options, on: :collection
       end
