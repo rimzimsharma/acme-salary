@@ -9,10 +9,11 @@ import { formatMoney } from "@/lib/format";
 import type { Employee, EmployeeSearchParams, FilterOptions, PageMeta } from "@/lib/types";
 import { EmployeeForm } from "./EmployeeForm";
 
-type State = { status: "loading" | "ready" | "error"; employees: Employee[]; meta?: PageMeta; error?: string };
+// The outcome of one request, tagged with the request it answers so stale or in-flight state can be derived.
+type Outcome = { key: string; status: "ready" | "error"; employees: Employee[]; meta?: PageMeta; error?: string };
 
 export function EmployeesPage() {
-  const [state, setState] = useState<State>({ status: "loading", employees: [] });
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search.trim(), 300);
@@ -21,17 +22,17 @@ export function EmployeesPage() {
   const [toDeactivate, setToDeactivate] = useState<Employee | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | undefined>(undefined);
-  const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; dir: "asc" | "desc" } | null>(null);
+  // Changing the search, a filter or the sort returns to page 1; derived here so no effect has to reset it.
+  const filterKey = JSON.stringify([debouncedSearch, filters, sort]);
+  const [paging, setPaging] = useState({ filterKey, page: 1 });
+  const page = paging.filterKey === filterKey ? paging.page : 1;
+  const setPage = (next: number) => setPaging({ filterKey, page: next });
   const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, page, sort: sort?.column, dir: sort?.dir, status: filters.status as EmployeeSearchParams["status"] };
   const paramsKey = JSON.stringify(params);
+  const requestKey = `${paramsKey}#${attempt}`;
 
-  useEffect(() => setPage(1), [debouncedSearch]);
-
-  const changeFilter = (change: Partial<typeof filters>) => {
-    setFilters({ ...filters, ...change });
-    setPage(1);
-  };
+  const changeFilter = (change: Partial<typeof filters>) => setFilters({ ...filters, ...change });
 
   useEffect(() => {
     getFilterOptions().then(setOptions).catch(() => setOptions(null)); // filters stay usable without dropdown values
@@ -39,16 +40,24 @@ export function EmployeesPage() {
 
   useEffect(() => {
     let cancelled = false; // ignore responses that arrive after a newer request started
-    setState((s) => ({ ...s, status: "loading", error: undefined }));
     listEmployees(JSON.parse(paramsKey))
-      .then((result) => !cancelled && setState({ status: "ready", employees: result.data, meta: result.meta }))
-      .catch((e: Error) => !cancelled && setState((s) => ({ ...s, status: "error", error: e.message })));
+      .then((result) => !cancelled && setOutcome({ key: requestKey, status: "ready", employees: result.data, meta: result.meta }))
+      .catch(
+        (e: Error) =>
+          !cancelled &&
+          setOutcome((previous) => ({ key: requestKey, status: "error", employees: previous?.employees ?? [], meta: previous?.meta, error: e.message })),
+      );
     return () => {
       cancelled = true;
     };
-  }, [attempt, paramsKey]);
+  }, [paramsKey, requestKey]);
 
-  const { status, employees, error, meta } = state;
+  // A request is in flight whenever the latest outcome answers an older request.
+  const loading = outcome?.key !== requestKey;
+  const status = loading ? "loading" : outcome.status;
+  const employees = outcome?.employees ?? [];
+  const meta = outcome?.meta;
+  const error = !loading ? outcome.error : undefined;
 
   const handleSaved = () => {
     setFormOpen(false);
@@ -71,7 +80,6 @@ export function EmployeesPage() {
 
   const toggleSort = (column: string) => {
     setSort((current) => ({ column, dir: current?.column === column && current.dir === "asc" ? "desc" : "asc" }));
-    setPage(1);
   };
   const header = (label: string, column: string, enabled = true) => (
     <SortableTh label={label} active={sort?.column === column ? sort.dir : null} enabled={enabled} onSort={() => toggleSort(column)} />

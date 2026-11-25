@@ -2,7 +2,7 @@
 
 import { Alert, Button, Group, Modal, NativeSelect, NumberInput, Stack, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ValidationError, createEmployee, updateEmployee } from "@/lib/api";
 import type { Employee, EmployeeInput, Seniority } from "@/lib/types";
 
@@ -33,6 +33,15 @@ const valuesFor = (employee?: Employee) =>
     : BLANK;
 
 export function EmployeeForm({ opened, employee, onClose, onSaved }: Props) {
+  return (
+    <Modal opened={opened} onClose={onClose} title={employee ? "Edit employee" : "Add employee"} transitionProps={{ duration: 0 }}>
+      {/* The body only exists while the dialog is open, so each opening starts fresh (blank or prefilled). */}
+      <FormBody key={employee?.id ?? "new"} employee={employee} onClose={onClose} onSaved={onSaved} />
+    </Modal>
+  );
+}
+
+function FormBody({ employee, onClose, onSaved }: Omit<Props, "opened">) {
   const form = useForm({
     initialValues: valuesFor(employee),
     validate: {
@@ -45,16 +54,6 @@ export function EmployeeForm({ opened, employee, onClose, onSaved }: Props) {
       hire_date: (v) => required(v) ?? (v > new Date().toISOString().slice(0, 10) ? "Hire date cannot be in the future" : null),
     },
   });
-
-  // Start from a clean slate each time the dialog opens (for a new or a different employee).
-  useEffect(() => {
-    if (!opened) return;
-    form.setValues(valuesFor(employee));
-    form.resetDirty(valuesFor(employee));
-    form.clearErrors();
-    setFormError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, employee?.id]);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -79,7 +78,6 @@ export function EmployeeForm({ opened, employee, onClose, onSaved }: Props) {
   });
 
   return (
-    <Modal opened={opened} onClose={onClose} title={employee ? "Edit employee" : "Add employee"} transitionProps={{ duration: 0 }}>
       <form onSubmit={submit}>
         <Stack>
           {formError && <Alert color="red">{formError}</Alert>}
@@ -98,6 +96,5 @@ export function EmployeeForm({ opened, employee, onClose, onSaved }: Props) {
           </Group>
         </Stack>
       </form>
-    </Modal>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Alert, Badge, Box, Button, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { BarChart } from "@mantine/charts";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getBreakdown, getFilterOptions, getOutliers, getSummary } from "@/lib/api";
 import { formatDeviation, formatMoney } from "@/lib/format";
 import type { BreakdownDimension, BreakdownGroup, FilterOptions, Outlier, Summary } from "@/lib/types";
@@ -22,18 +22,19 @@ export function InsightsPage() {
   const [country, setCountry] = useState("");
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [outliers, setOutliers] = useState<Outlier[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const fail = (e: Error) => setError(e.message);
+  // A failure belongs to the attempt that caused it, so a retry clears it without resetting state in an effect.
+  const [failure, setFailure] = useState<{ attempt: number; message: string } | null>(null);
+  const error = failure?.attempt === attempt ? failure.message : null;
+  const fail = useCallback((e: Error) => setFailure({ attempt, message: e.message }), [attempt]);
   const dimensionLabel = DIMENSIONS.find((d) => d.value === dimension)!.label;
   const drillCountry = dimension === "country" ? "" : country; // a country filter is meaningless when grouping by country
 
   useEffect(() => {
-    setError(null);
     getSummary().then(setSummary).catch(fail);
     getFilterOptions().then(setOptions).catch(() => setOptions(null)); // dropdown values are optional
     getOutliers(25).then(setOutliers).catch(fail);
-  }, [attempt]);
+  }, [attempt, fail]);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +46,7 @@ export function InsightsPage() {
     return () => {
       cancelled = true;
     };
-  }, [dimension, drillCountry, attempt]);
+  }, [dimension, drillCountry, attempt, fail]);
 
   return (
     <>
