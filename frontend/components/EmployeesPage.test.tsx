@@ -102,4 +102,36 @@ describe("EmployeesPage", () => {
     expect(screen.getByLabelText("Status")).toHaveValue("active");
     expect(api.listEmployees).toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
   });
+
+  describe("paging", () => {
+    const sixtyEmployees = () => ({ data: [asha], meta: { page: 1, per_page: 25, total: 60, total_pages: 3 } });
+
+    it("shows the total and moves between pages", async () => {
+      vi.mocked(api.listEmployees).mockResolvedValue(sixtyEmployees());
+      renderWithProviders(<EmployeesPage />);
+
+      expect(await screen.findByText("60 employees")).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "2" }));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    });
+
+    it("returns to page 1 when a filter changes", async () => {
+      vi.mocked(api.listEmployees).mockResolvedValue(sixtyEmployees());
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("60 employees");
+      await userEvent.click(screen.getByRole("button", { name: "3" }));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ page: 3 })));
+
+      await userEvent.selectOptions(await screen.findByLabelText("Country"), "India");
+      await waitFor(() =>
+        expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ country: "India", page: 1 })),
+      );
+    });
+
+    it("hides the pager when everything fits on one page", async () => {
+      renderWithProviders(<EmployeesPage />);
+      expect(await screen.findByText("1 employee")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "2" })).not.toBeInTheDocument();
+    });
+  });
 });
