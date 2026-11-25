@@ -88,7 +88,7 @@ function FormBody({ employee, onClose, onSaved }: Omit<Props, "opened">) {
           <TextInput label="Department" {...form.getInputProps("department")} />
           <TextInput label="Country" {...form.getInputProps("country")} />
           <NativeSelect label="Currency" data={CURRENCIES} {...form.getInputProps("currency")} />
-          <NumberInput label="Annual salary" min={1} allowDecimal={false} thousandSeparator="" {...form.getInputProps("annual_salary")} />
+          <NumberInput label="Annual salary" min={1} clampBehavior="none" allowDecimal={false} thousandSeparator="" {...form.getInputProps("annual_salary")} />
           <NativeSelect label="Seniority" data={SENIORITIES} {...form.getInputProps("seniority")} />
           <TextInput label="Hire date" type="date" {...form.getInputProps("hire_date")} />
           <Group justify="flex-end">

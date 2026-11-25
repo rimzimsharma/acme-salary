@@ -146,3 +146,16 @@ describe("EmployeeForm hire date boundary", () => {
     }
   });
 });
+
+describe("EmployeeForm salary rule", () => {
+  it("shows an error for a salary of zero or less instead of silently changing it", async () => {
+    open();
+    await fillValidForm();
+    await userEvent.clear(screen.getByLabelText(/Annual salary/));
+    await userEvent.type(screen.getByLabelText(/Annual salary/), "0");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Must be greater than 0")).toBeInTheDocument();
+    expect(api.createEmployee).not.toHaveBeenCalled();
+  });
+});
