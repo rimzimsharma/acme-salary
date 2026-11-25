@@ -3,8 +3,9 @@ module Insights
   module Summary
     def self.call
       active = Employee.active.pluck(:currency, :annual_salary)
-      { headcount: active.size,
-        total_payroll_usd: active.sum { |currency, salary| CurrencyRates.to_usd(salary, currency) } }
+      usd_values = active.map { |currency, salary| CurrencyRates.to_usd(salary, currency) }
+      { headcount: active.size, total_payroll_usd: usd_values.sum,
+        usd: Statistics.call(usd_values).slice(:min, :median, :avg, :max) }
     end
   end
 end
