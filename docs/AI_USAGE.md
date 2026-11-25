@@ -31,6 +31,7 @@ steered the work step by step and reviewed it; the AI wrote code, tests, commits
 | Several backend behaviours were first batched into one commit | The human's incremental-commits instruction | Later work was one behaviour per commit |
 | New ESLint React rules rejected effects that set state synchronously | Running ESLint (not just the tests) before declaring the frontend done | Refactored to derived state with all tests unchanged |
 | Two commands piped `git commit` output through `head`, which the organisation's commit tooling forbids | The tooling blocked them | Re-ran without the pipe |
+| Outlier thresholds, the dollar rounding, the `limit` cap and the paging tie-break could each be changed without a single test failing, despite ~99% coverage | An independent review by the `quality-reviewer` agent, which applied one-line mutations to a copy of the code | Added boundary tests (exactly 5 peers, exactly 1.4x / 0.7x, rounding, tie-break, limit clamp) and re-ran all seven mutations: every one now fails the suite |
 
 ## What the human decided
 
@@ -44,3 +45,21 @@ within one country, soft delete) are recorded with reasons in [DESIGN.md](DESIGN
 - End to end against 10,000 seeded employees: pages load, CORS works from the UI origin, and
   create, update, invalid create (422) and deactivate behave as designed.
 - Latencies in [DESIGN.md](DESIGN.md) were measured, not estimated.
+
+## Instructions that steered the AI
+
+These are the actual directions given during the build (the rest of the work followed from the brief itself).
+
+- **The brief**, supplied as a document: build employee salary management for 10,000 employees as an HR-manager
+  tool, test-first and with incremental commits, and write a one-page requirements document before building.
+- **Order of work:** "give me a requirement document before building software, outlining the goal, scope,
+  features, what we are deliberately leaving out, and the reasoning". Only after it was confirmed did the build start.
+- **Starting point:** "it's up to you whether the previous one is good to proceed with, or we start from scratch".
+  The AI recommended a fresh start, and the human agreed.
+- **Working style, mid-build:** "it should be more focused on TDD" and "do incremental commits".
+- **The loop the AI followed for each behaviour:** write one failing test, run it and confirm it fails for the
+  right reason, write the minimum code to pass, run the whole suite, commit one behaviour. Tests that passed on
+  first run are labelled as guards.
+- **Reviewing the result:** the project ships a read-only reviewer agent,
+  [`.claude/agents/quality-reviewer.md`](../.claude/agents/quality-reviewer.md), written from the brief's own
+  criteria. Anyone can run it in Claude Code to audit the repo. Its first run found the weak tests listed above.
