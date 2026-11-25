@@ -10,6 +10,8 @@ Web software for an HR Manager to maintain salary data for ~10,000 employees acr
 - **Index of all artifacts the brief asks for:** [docs/ARTIFACTS.md](docs/ARTIFACTS.md)
 - **How AI was used (and where it was wrong):** [docs/AI_USAGE.md](docs/AI_USAGE.md)
 
+Deployment (Render blueprint and steps): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## What it does
 
 | Screen | Capabilities |

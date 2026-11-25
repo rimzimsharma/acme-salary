@@ -13,3 +13,5 @@ The assessment brief asks for artifacts that explain thinking and approach. Each
 
 Also in the repository: the commit history (one behaviour per commit), test coverage commands in the
 [README](../README.md), and the tests themselves (backend `backend/test/`, frontend next to the code).
+
+Deployment: [DEPLOYMENT.md](DEPLOYMENT.md) and [`render.yaml`](../render.yaml).

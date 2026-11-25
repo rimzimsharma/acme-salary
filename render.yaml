@@ -1,0 +1,39 @@
+# Render Blueprint: deploys the API and the UI from this repository.
+# See docs/DEPLOYMENT.md for the steps. The two variables marked "sync: false" are filled in
+# on the Render dashboard once both services exist (each needs the other's URL).
+services:
+  - type: web
+    name: acme-salary-api
+    runtime: ruby
+    plan: free
+    rootDir: backend
+    buildCommand: bundle install
+    # SQLite lives on the free tier's temporary disk, so the data is recreated on every start.
+    # The seed is deterministic and takes about a second, so the app always comes up with 10,000 employees.
+    startCommand: >-
+      bin/rails db:prepare &&
+      bin/rails runner 'Seeding::EmployeeSeeder.call(count: 10_000) if Employee.none?' &&
+      bin/rails server -b 0.0.0.0 -p $PORT
+    healthCheckPath: /up
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: BUNDLE_WITHOUT
+        value: development:test
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: FRONTEND_ORIGINS
+        sync: false # the UI's public URL, e.g. https://acme-salary-ui.onrender.com
+
+  - type: web
+    name: acme-salary-ui
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start -- -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # the API's public URL, e.g. https://acme-salary-api.onrender.com (needed at build time)

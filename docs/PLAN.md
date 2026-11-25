@@ -27,7 +27,7 @@ design itself see [DESIGN.md](DESIGN.md); for scope see [REQUIREMENTS.md](REQUIR
 | 7 | Frontend | Employees page (list, add, edit, deactivate) and Insights dashboard | Done |
 | 8 | Quality gates | Coverage reports, ESLint, TypeScript, RuboCop, two independent audits and their fixes | Done |
 | 9 | Documentation | README, design, diagrams, AI usage, this plan, artifacts index | Done |
-| 10 | Deployment | A public URL for the hiring team | **Not done yet** |
+| 10 | Deployment | A Render blueprint, tested locally in production mode, and a step-by-step guide ([DEPLOYMENT.md](DEPLOYMENT.md)) | Prepared; the live deploy is done from the owner's Render account |
 | 11 | Demo video | Short walkthrough of both screens | **Not done yet** |
 
 ## Decision log
