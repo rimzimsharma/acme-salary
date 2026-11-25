@@ -2,10 +2,12 @@
 
 import { Alert, Badge, Button, Group, NativeSelect, Pagination, Table, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useEffect, useState } from "react";
 import { getFilterOptions, listEmployees } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import type { Employee, EmployeeSearchParams, FilterOptions, PageMeta } from "@/lib/types";
+import { EmployeeForm } from "./EmployeeForm";
 
 type State = { status: "loading" | "ready" | "error"; employees: Employee[]; meta?: PageMeta; error?: string };
 
@@ -16,6 +18,7 @@ export function EmployeesPage() {
   const [debouncedSearch] = useDebouncedValue(search.trim(), 300);
   const [filters, setFilters] = useState({ country: "", department: "", seniority: "", status: "active" });
   const [options, setOptions] = useState<FilterOptions | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; dir: "asc" | "desc" } | null>(null);
   const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, page, sort: sort?.column, dir: sort?.dir, status: filters.status as EmployeeSearchParams["status"] };
@@ -45,6 +48,12 @@ export function EmployeesPage() {
 
   const { status, employees, error, meta } = state;
 
+  const handleSaved = () => {
+    setFormOpen(false);
+    setAttempt((n) => n + 1); // refetch so the list reflects the change
+    notifications.show({ message: "Employee saved", color: "green" });
+  };
+
   const toggleSort = (column: string) => {
     setSort((current) => ({ column, dir: current?.column === column && current.dir === "asc" ? "desc" : "asc" }));
     setPage(1);
@@ -55,9 +64,11 @@ export function EmployeesPage() {
 
   return (
     <>
-      <Title order={1} mb="md">
-        Employees
-      </Title>
+      <Group justify="space-between" mb="md">
+        <Title order={1}>Employees</Title>
+        <Button onClick={() => setFormOpen(true)}>Add employee</Button>
+      </Group>
+      <EmployeeForm opened={formOpen} onClose={() => setFormOpen(false)} onSaved={handleSaved} />
       <Group align="flex-end" mb="md" wrap="wrap">
         <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} />
         <FilterSelect label="Country" value={filters.country} values={options?.countries} onChange={(country) => changeFilter({ country })} />

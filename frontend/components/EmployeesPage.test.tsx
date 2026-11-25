@@ -12,6 +12,18 @@ vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   listEmployees: vi.fn(),
   getFilterOptions: vi.fn(),
+  deactivateEmployee: vi.fn(),
+}));
+
+// The form has its own tests; here a stub lets us check how the page opens, saves and closes it.
+vi.mock("./EmployeeForm", () => ({
+  EmployeeForm: ({ opened, employee, onSaved }: { opened: boolean; employee?: { id: number; full_name: string }; onSaved: (e: unknown) => void }) =>
+    opened ? (
+      <div role="dialog" aria-label="Employee form">
+        {employee ? `Editing ${employee.full_name}` : "Adding a new employee"}
+        <button onClick={() => onSaved({ id: 99 })}>Stub save</button>
+      </div>
+    ) : null,
 }));
 
 const asha: Employee = {
@@ -168,5 +180,23 @@ describe("EmployeesPage", () => {
     expect(table.getAllByText("India")).toHaveLength(2);
     expect(table.getAllByText("mid")).toHaveLength(2);
     expect(table.getByText("Inactive")).toBeInTheDocument();
+  });
+
+  describe("adding", () => {
+    it("opens the form from the Add employee button and refreshes the list after saving", async () => {
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Add employee" }));
+      expect(screen.getByRole("dialog")).toHaveTextContent("Adding a new employee");
+
+      vi.mocked(api.listEmployees).mockClear();
+      await userEvent.click(screen.getByRole("button", { name: "Stub save" }));
+
+      await waitFor(() => expect(api.listEmployees).toHaveBeenCalled());
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(await screen.findByText("Employee saved")).toBeInTheDocument();
+    });
   });
 });
