@@ -199,4 +199,13 @@ describe("EmployeesPage", () => {
       expect(await screen.findByText("Employee saved")).toBeInTheDocument();
     });
   });
+
+  describe("editing", () => {
+    it("opens the form for the chosen row", async () => {
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      await userEvent.click(screen.getByRole("button", { name: "Edit Asha Rao" }));
+      expect(screen.getByRole("dialog")).toHaveTextContent("Editing Asha Rao");
+    });
+  });
 });

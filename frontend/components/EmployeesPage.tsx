@@ -19,6 +19,7 @@ export function EmployeesPage() {
   const [filters, setFilters] = useState({ country: "", department: "", seniority: "", status: "active" });
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Employee | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; dir: "asc" | "desc" } | null>(null);
   const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, page, sort: sort?.column, dir: sort?.dir, status: filters.status as EmployeeSearchParams["status"] };
@@ -66,9 +67,9 @@ export function EmployeesPage() {
     <>
       <Group justify="space-between" mb="md">
         <Title order={1}>Employees</Title>
-        <Button onClick={() => setFormOpen(true)}>Add employee</Button>
+        <Button onClick={() => { setEditing(undefined); setFormOpen(true); }}>Add employee</Button>
       </Group>
-      <EmployeeForm opened={formOpen} onClose={() => setFormOpen(false)} onSaved={handleSaved} />
+      <EmployeeForm opened={formOpen} employee={editing} onClose={() => setFormOpen(false)} onSaved={handleSaved} />
       <Group align="flex-end" mb="md" wrap="wrap">
         <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} />
         <FilterSelect label="Country" value={filters.country} values={options?.countries} onChange={(country) => changeFilter({ country })} />
@@ -103,6 +104,9 @@ export function EmployeesPage() {
               {header("Salary", "annual_salary", filters.country !== "")}
               <Table.Th>Salary (USD)</Table.Th>
               <Table.Th>Status</Table.Th>
+              <Table.Th>
+                <span style={{ position: "absolute", left: -9999 }}>Actions</span>
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -119,6 +123,16 @@ export function EmployeesPage() {
                 <Table.Td>{formatMoney(e.annual_salary, e.currency)}</Table.Td>
                 <Table.Td>{formatMoney(e.annual_salary_usd, "USD")}</Table.Td>
                 <Table.Td>{e.active ? "Active" : <Badge color="gray">Inactive</Badge>}</Table.Td>
+                <Table.Td>
+                  <Button
+                    size="compact-sm"
+                    variant="subtle"
+                    aria-label={`Edit ${e.full_name}`}
+                    onClick={() => { setEditing(e); setFormOpen(true); }}
+                  >
+                    Edit
+                  </Button>
+                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
