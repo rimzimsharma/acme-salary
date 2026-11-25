@@ -48,3 +48,12 @@ export function listEmployees(params: EmployeeSearchParams = {}) {
 export async function createEmployee(input: EmployeeInput): Promise<Employee> {
   return (await request<{ data: Employee }>("/api/v1/employees", { method: "POST", body: { employee: input } })).data;
 }
+
+export async function updateEmployee(id: number, changes: Partial<EmployeeInput>): Promise<Employee> {
+  return (await request<{ data: Employee }>(`/api/v1/employees/${id}`, { method: "PATCH", body: { employee: changes } })).data;
+}
+
+/** Soft delete: the employee is kept but flagged inactive. */
+export async function deactivateEmployee(id: number): Promise<Employee> {
+  return (await request<{ data: Employee }>(`/api/v1/employees/${id}`, { method: "DELETE" })).data;
+}

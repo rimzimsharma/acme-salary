@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, ValidationError, createEmployee, listEmployees } from "./api";
+import { ApiError, ValidationError, createEmployee, deactivateEmployee, listEmployees, updateEmployee } from "./api";
 import type { EmployeeInput } from "./types";
 
 function mockFetch(status: number, body: unknown) {
@@ -65,5 +65,28 @@ describe("createEmployee", () => {
     const failure = await createEmployee(input).catch((e) => e);
     expect(failure).toBeInstanceOf(ValidationError);
     expect(failure.errors).toEqual({ email: ["is invalid"], annual_salary: ["must be greater than 0"] });
+  });
+});
+
+describe("updateEmployee and deactivateEmployee", () => {
+  it("PATCHes only the changed fields to the employee's URL", async () => {
+    const fetchMock = mockFetch(200, { data: { id: 7, annual_salary: 2500000 } });
+    const updated = await updateEmployee(7, { annual_salary: 2500000 });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect([url, init.method]).toEqual(["http://localhost:3001/api/v1/employees/7", "PATCH"]);
+    expect(JSON.parse(init.body)).toEqual({ employee: { annual_salary: 2500000 } });
+    expect(updated.annual_salary).toBe(2500000);
+  });
+
+  it("update surfaces validation errors too", async () => {
+    mockFetch(422, { errors: { annual_salary: ["must be greater than 0"] } });
+    await expect(updateEmployee(7, { annual_salary: 0 })).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("deactivation is a DELETE that returns the now-inactive record", async () => {
+    const fetchMock = mockFetch(200, { data: { id: 7, active: false } });
+    const result = await deactivateEmployee(7);
+    expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
+    expect(result.active).toBe(false);
   });
 });
