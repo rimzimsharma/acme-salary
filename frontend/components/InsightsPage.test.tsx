@@ -103,3 +103,36 @@ describe("InsightsPage dimensions and drill-down", () => {
     await waitFor(() => expect(api.getBreakdown).toHaveBeenLastCalledWith("job_title", { country: "India" }));
   });
 });
+
+describe("InsightsPage outliers", () => {
+  const outlier = (over: Partial<Outlier> = {}): Outlier => ({
+    id: 1, full_name: "Hana Johnson", job_title: "Marketing Specialist", country: "Canada", seniority: "senior",
+    currency: "CAD", annual_salary: 203000, salary_usd: 149265, peer_median_usd: 72427, direction: "above", deviation_pct: 106, ...over,
+  });
+
+  it("lists people paid far from their peers with how far, and which way", async () => {
+    vi.mocked(api.getOutliers).mockResolvedValue([outlier(), outlier({ id: 2, full_name: "Sofia Taylor", direction: "below", deviation_pct: -52, salary_usd: 11807, peer_median_usd: 24096, country: "India", currency: "INR", annual_salary: 980000 })]);
+    renderWithProviders(<InsightsPage />);
+
+    const table = within(await screen.findByRole("table", { name: "Pay outliers" }));
+    const hana = within(table.getByRole("row", { name: /Hana Johnson/ }));
+    expect(hana.getByText("+106%")).toBeInTheDocument();
+    expect(hana.getByText("CA$203,000")).toBeInTheDocument();
+    expect(hana.getByText("$72,427")).toBeInTheDocument(); // peer median
+    expect(hana.getByText(/above peers/)).toBeInTheDocument();
+    const sofia = within(table.getByRole("row", { name: /Sofia Taylor/ }));
+    expect(sofia.getByText("-52%")).toBeInTheDocument();
+    expect(sofia.getByText(/below peers/)).toBeInTheDocument();
+  });
+
+  it("says so when nobody stands out", async () => {
+    renderWithProviders(<InsightsPage />);
+    expect(await screen.findByText("No unusual pay found.")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Pay outliers" })).not.toBeInTheDocument();
+  });
+
+  it("explains how outliers are chosen", async () => {
+    renderWithProviders(<InsightsPage />);
+    expect(await screen.findByText(/same country, job title and seniority/)).toBeInTheDocument();
+  });
+});

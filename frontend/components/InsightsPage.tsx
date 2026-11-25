@@ -1,10 +1,10 @@
 "use client";
 
-import { Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Badge, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { getBreakdown, getFilterOptions, getSummary } from "@/lib/api";
-import { formatMoney } from "@/lib/format";
-import type { BreakdownDimension, BreakdownGroup, FilterOptions, Summary } from "@/lib/types";
+import { getBreakdown, getFilterOptions, getOutliers, getSummary } from "@/lib/api";
+import { formatDeviation, formatMoney } from "@/lib/format";
+import type { BreakdownDimension, BreakdownGroup, FilterOptions, Outlier, Summary } from "@/lib/types";
 
 const DIMENSIONS: { value: BreakdownDimension; label: string }[] = [
   { value: "country", label: "Country" },
@@ -20,12 +20,14 @@ export function InsightsPage() {
   const [dimension, setDimension] = useState<BreakdownDimension>("country");
   const [country, setCountry] = useState("");
   const [options, setOptions] = useState<FilterOptions | null>(null);
+  const [outliers, setOutliers] = useState<Outlier[] | null>(null);
   const dimensionLabel = DIMENSIONS.find((d) => d.value === dimension)!.label;
   const drillCountry = dimension === "country" ? "" : country; // a country filter is meaningless when grouping by country
 
   useEffect(() => {
     getSummary().then(setSummary);
     getFilterOptions().then(setOptions).catch(() => setOptions(null));
+    getOutliers(25).then(setOutliers);
   }, []);
 
   useEffect(() => {
@@ -79,6 +81,16 @@ export function InsightsPage() {
         </Group>
       </Group>
       <BreakdownTable caption={`Pay by ${dimensionLabel.toLowerCase()}`} label={dimensionLabel} groups={groups} />
+
+      <Title order={2} size="h3" mt="xl" mb={4}>
+        Pay outliers
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        People paid well above or below the median of their peers (same country, job title and seniority; groups of
+        fewer than 5 are skipped). Worth a look, not necessarily wrong.
+      </Text>
+      {outliers?.length === 0 && <Text>No unusual pay found.</Text>}
+      {outliers && outliers.length > 0 && <OutlierTable outliers={outliers} />}
     </>
   );
 }
@@ -127,5 +139,45 @@ function Tile({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
     </Paper>
+  );
+}
+
+function OutlierTable({ outliers }: { outliers: Outlier[] }) {
+  return (
+    <Table.ScrollContainer minWidth={720}>
+      <Table aria-label="Pay outliers">
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Name</Table.Th>
+            <Table.Th>Role</Table.Th>
+            <Table.Th>Country</Table.Th>
+            <Table.Th ta="right">Salary</Table.Th>
+            <Table.Th ta="right">Peer median (USD)</Table.Th>
+            <Table.Th>Difference</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {outliers.map((o) => (
+            <Table.Tr key={o.id}>
+              <Table.Td>{o.full_name}</Table.Td>
+              <Table.Td>
+                {o.job_title} ({o.seniority})
+              </Table.Td>
+              <Table.Td>{o.country}</Table.Td>
+              <Table.Td ta="right">{formatMoney(o.annual_salary, o.currency)}</Table.Td>
+              <Table.Td ta="right">{formatMoney(o.peer_median_usd, "USD")}</Table.Td>
+              <Table.Td>
+                <Badge color={o.direction === "above" ? "orange" : "blue"} variant="light">
+                  {formatDeviation(o.deviation_pct)}
+                </Badge>{" "}
+                <Text span size="xs" c="dimmed">
+                  {o.direction} peers
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Table.ScrollContainer>
   );
 }
