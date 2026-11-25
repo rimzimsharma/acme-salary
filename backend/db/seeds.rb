@@ -1,9 +1,9 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-#
-# Example:
-#
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# Seeds a deterministic synthetic workforce (default 10,000 employees).
+#   bin/rails db:seed                      # 10,000 employees
+#   EMPLOYEE_COUNT=500 bin/rails db:seed   # smaller data set
+# Re-running replaces existing employees.
+count = ENV.fetch("EMPLOYEE_COUNT", 10_000).to_i
+started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+Seeding::EmployeeSeeder.call(count: count)
+elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+puts "Seeded #{Employee.count} employees (#{Employee.active.count} active) in #{elapsed.round(2)}s"

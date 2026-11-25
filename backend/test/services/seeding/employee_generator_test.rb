@@ -14,7 +14,7 @@ class Seeding::EmployeeGeneratorTest < ActiveSupport::TestCase
 
   test "every generated row passes Employee validations" do
     # The seeder bulk-inserts without validations, so this is the safety net.
-    invalid = rows.map { |attrs| Employee.new(attrs) }.reject(&:valid?)
+    invalid = rows.map { |attrs| Employee.new(attrs.except(:outlier)) }.reject(&:valid?)
     assert_empty invalid.map { |e| [e.email, e.errors.full_messages] }
   end
 
@@ -65,5 +65,31 @@ class Seeding::EmployeeGeneratorTest < ActiveSupport::TestCase
 
   test "salaries are rounded to a realistic step, not odd numbers" do
     rows(count: 200).each { |r| assert_equal 0, r[:annual_salary] % 500, "#{r[:currency]} #{r[:annual_salary]}" }
+  end
+
+  test "most staff are active but some have left" do
+    data = rows(count: 3_000)
+    share = data.count { |r| r[:active] }.fdiv(data.size)
+    assert_in_delta 0.94, share, 0.03
+  end
+
+  test "a small share of deliberate pay outliers exists for the insights to find" do
+    data = rows(count: 5_000)
+    flagged = data.select { |r| r[:outlier] }
+    assert_in_delta 0.01, flagged.size.fdiv(data.size), 0.006
+    assert flagged.all? { |r| r.key?(:annual_salary) }
+  end
+
+  test "outliers really are far from the band for their peers" do
+    data = rows(count: 8_000)
+    peers = data.reject { |r| r[:outlier] }.group_by { |r| [r[:country], r[:job_title], r[:seniority]] }
+    far = data.select { |r| r[:outlier] }.count do |r|
+      group = peers[[r[:country], r[:job_title], r[:seniority]]]
+      next false if group.blank?
+      median = group.map { |p| p[:annual_salary] }.sort[group.size / 2]
+      ratio = r[:annual_salary].fdiv(median)
+      ratio < 0.65 || ratio > 1.5
+    end
+    assert_operator far, :>=, 40
   end
 end

@@ -33,6 +33,9 @@ module Seeding
     }.freeze
 
     NOISE = (0.88..1.12) # individual variation around the band
+    ACTIVE_SHARE = 0.94
+    OUTLIER_SHARE = 0.01
+    OUTLIER_FACTORS = [0.5, 1.8].freeze # paid far below / far above peers
 
     FIRST_NAMES = %w[Aarav Priya Rohan Ananya Vikram Neha Arjun Kavya Liam Olivia Noah Emma Oliver Amelia
                      James Sophia Lucas Mia Ethan Chloe Hana Kenji Yuki Sakura Hiro Lena Jonas Greta Felix Marta
@@ -63,6 +66,7 @@ module Seeding
       last = LAST_NAMES.sample(random: rng)
       title = DEPARTMENTS.fetch(department)[:titles].keys.sample(random: rng)
       seniority = weighted(rng, SENIORITIES.transform_values { |s| s[:weight] })
+      outlier = rng.rand < OUTLIER_SHARE
 
       {
         full_name: "#{first} #{last}",
@@ -72,17 +76,19 @@ module Seeding
         department: department,
         country: country,
         currency: COUNTRIES.fetch(country)[:currency],
-        annual_salary: salary(rng, country:, department:, title:, seniority:),
+        annual_salary: salary(rng, country:, department:, title:, seniority:, outlier:),
         seniority: seniority,
         hire_date: @today - rng.rand(0..(12 * 365)),
-        active: true
+        active: rng.rand < ACTIVE_SHARE,
+        outlier: outlier # test/insight marker only; stripped before insert
       }
     end
 
-    def salary(rng, country:, department:, title:, seniority:)
+    def salary(rng, country:, department:, title:, seniority:, outlier:)
       info = COUNTRIES.fetch(country)
       usd = DEPARTMENTS.fetch(department)[:titles].fetch(title) *
             SENIORITIES.fetch(seniority)[:multiplier] * info[:pay] * rng.rand(NOISE)
+      usd *= OUTLIER_FACTORS.sample(random: rng) if outlier
       local = usd * CurrencyRates::PER_USD.fetch(info[:currency])
       [(local / info[:round]).round * info[:round], info[:round]].max
     end
