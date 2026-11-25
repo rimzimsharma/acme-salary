@@ -1,4 +1,5 @@
 require "test_helper"
+require "minitest/mock"
 
 class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
   def json = response.parsed_body
@@ -47,5 +48,15 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["Very High", "Very Low"], json["outliers"].map { |o| o["full_name"] }
     get "/api/v1/insights/outliers", params: { limit: 1 }
     assert_equal 1, json["outliers"].size
+  end
+
+  test "outliers limit is clamped to 1..200 and defaults when omitted" do
+    seen = []
+    Insights::Outliers.stub(:call, ->(**args) { seen << args; [] }) do
+      get "/api/v1/insights/outliers", params: { limit: 999 }
+      get "/api/v1/insights/outliers", params: { limit: 0 }
+      get "/api/v1/insights/outliers"
+    end
+    assert_equal [{ limit: 200 }, { limit: 1 }, {}], seen
   end
 end
