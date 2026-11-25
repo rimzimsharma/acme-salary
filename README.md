@@ -54,6 +54,7 @@ cd backend  && bin/rails test      # 110 tests, runs in about a second
 cd frontend && npm test            # 66 tests
 cd frontend && npx tsc --noEmit && npx eslint .
 cd backend  && bundle exec rubocop        # Ruby style (Rails omakase); add -a to auto-fix safe offenses
+# In Claude Code: type /rubocop to check, or /rubocop fix to auto-fix safe offenses
 
 # Coverage reports
 cd backend  && COVERAGE=1 bin/rails test     # line + branch, HTML in backend/coverage (99.6% line / 97.4% branch)
