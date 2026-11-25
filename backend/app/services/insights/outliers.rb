@@ -5,8 +5,10 @@ module Insights
     LOW = 0.7
     MIN_PEERS = 5 # smaller groups have no meaningful 'typical' pay
 
-    def self.call
-      Employee.active.group_by { |e| [e.country, e.job_title, e.seniority] }.values.flat_map do |peers|
+    DEFAULT_LIMIT = 50
+
+    def self.call(limit: DEFAULT_LIMIT)
+      flagged = Employee.active.group_by { |e| [e.country, e.job_title, e.seniority] }.values.flat_map do |peers|
         next [] if peers.size < MIN_PEERS
 
         usd = peers.to_h { |e| [e, CurrencyRates.to_usd(e.annual_salary, e.currency)] }
@@ -18,6 +20,7 @@ module Insights
             deviation_pct: ((salary - median) * 100.0 / median).round }
         end
       end
+      flagged.sort_by { |row| -row[:deviation_pct].abs }.first(limit)
     end
   end
 end

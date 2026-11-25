@@ -46,4 +46,13 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     group_with(200_000).deactivate!
     assert_empty Insights::Outliers.call
   end
+
+  test "most extreme first, capped by limit" do
+    group_with(160_000)                              # +60%
+    group_with(250_000, job_title: "Recruiter")      # +150%
+    group_with(30_000, job_title: "Accountant")      # -70%
+    all = Insights::Outliers.call
+    assert_equal [250_000, 30_000, 160_000], all.map { |r| r[:salary_usd] }
+    assert_equal [250_000], Insights::Outliers.call(limit: 1).map { |r| r[:salary_usd] }
+  end
 end
