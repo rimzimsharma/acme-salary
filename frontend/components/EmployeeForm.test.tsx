@@ -58,3 +58,26 @@ describe("EmployeeForm (add)", () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(saved));
   });
 });
+
+describe("EmployeeForm validation", () => {
+  it("blocks saving and marks every missing required field", async () => {
+    open();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findAllByText("Required")).toHaveLength(7);
+    expect(api.createEmployee).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed email and a hire date in the future before calling the API", async () => {
+    open();
+    await fillValidForm();
+    await userEvent.clear(screen.getByLabelText(/Email/));
+    await userEvent.type(screen.getByLabelText(/Email/), "not-an-email");
+    await userEvent.clear(screen.getByLabelText(/Hire date/));
+    await userEvent.type(screen.getByLabelText(/Hire date/), "2999-01-01");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Enter a valid email address")).toBeInTheDocument();
+    expect(screen.getByText("Hire date cannot be in the future")).toBeInTheDocument();
+    expect(api.createEmployee).not.toHaveBeenCalled();
+  });
+});

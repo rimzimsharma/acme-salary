@@ -5,6 +5,7 @@ import { useForm } from "@mantine/form";
 import { createEmployee } from "@/lib/api";
 import type { Employee, EmployeeInput, Seniority } from "@/lib/types";
 
+const required = (value: unknown) => (value === "" || value === null || value === undefined ? "Required" : null);
 const CURRENCIES = ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "JPY"];
 const SENIORITIES: Seniority[] = ["junior", "mid", "senior", "lead", "executive"];
 
@@ -19,6 +20,15 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
     initialValues: {
       full_name: "", email: "", job_title: "", department: "", country: "", currency: "USD",
       annual_salary: "" as number | "", seniority: "mid", hire_date: "",
+    },
+    validate: {
+      full_name: (v) => required(v.trim()),
+      email: (v) => required(v.trim()) ?? (/^\S+@\S+\.\S+$/.test(v.trim()) ? null : "Enter a valid email address"),
+      job_title: (v) => required(v.trim()),
+      department: (v) => required(v.trim()),
+      country: (v) => required(v.trim()),
+      annual_salary: (v) => required(v) ?? (Number(v) > 0 ? null : "Must be greater than 0"),
+      hire_date: (v) => required(v) ?? (v > new Date().toISOString().slice(0, 10) ? "Hire date cannot be in the future" : null),
     },
   });
 
