@@ -68,4 +68,59 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 999, json["data"]["id"]
     assert_equal true, json["data"]["active"]
   end
+
+  test "PATCH update changes permitted fields" do
+    employee = create_employee(annual_salary: 2_000_000)
+    patch "/api/v1/employees/#{employee.id}", params: { employee: { annual_salary: 2_500_000, job_title: "Staff Engineer" } }
+    assert_response :success
+    assert_equal [2_500_000, "Staff Engineer"], [employee.reload.annual_salary, employee.job_title]
+    assert_equal 2_500_000, json["data"]["annual_salary"]
+  end
+
+  test "PATCH update with bad data returns 422 and leaves the record unchanged" do
+    employee = create_employee(annual_salary: 2_000_000)
+    patch "/api/v1/employees/#{employee.id}", params: { employee: { annual_salary: 0 } }
+    assert_response :unprocessable_entity
+    assert_equal ["must be greater than 0"], json["errors"]["annual_salary"]
+    assert_equal 2_000_000, employee.reload.annual_salary
+  end
+
+  test "PATCH cannot reactivate or deactivate through attribute params" do
+    employee = create_employee
+    patch "/api/v1/employees/#{employee.id}", params: { employee: { active: false, job_title: "Lead" } }
+    assert_response :success
+    assert employee.reload.active?
+  end
+
+  test "DELETE deactivates the employee (soft delete) and keeps the row" do
+    employee = create_employee
+    assert_no_difference "Employee.count" do
+      delete "/api/v1/employees/#{employee.id}"
+    end
+    assert_response :success
+    assert_equal false, json["data"]["active"]
+    assert_not employee.reload.active?
+  end
+
+  test "deactivated employees disappear from the default list but stay findable" do
+    employee = create_employee(full_name: "Gone Soon")
+    delete "/api/v1/employees/#{employee.id}"
+    get "/api/v1/employees"
+    assert_empty json["data"]
+    get "/api/v1/employees", params: { status: "inactive" }
+    assert_equal ["Gone Soon"], json["data"].map { |e| e["full_name"] }
+  end
+
+  test "GET filter_options lists distinct values for the UI dropdowns, sorted" do
+    create_employee(country: "Japan", currency: "JPY", department: "Sales", job_title: "Sales Manager")
+    create_employee(country: "India", department: "Engineering", job_title: "Software Engineer")
+    create_employee(country: "India", department: "Engineering", job_title: "Software Engineer").deactivate!
+    get "/api/v1/employees/filter_options"
+    assert_response :success
+    assert_equal %w[India Japan], json["countries"]
+    assert_equal %w[Engineering Sales], json["departments"]
+    assert_equal ["Sales Manager", "Software Engineer"], json["job_titles"]
+    assert_equal Employee::SENIORITIES, json["seniorities"]
+    assert_equal Employee::CURRENCIES, json["currencies"]
+  end
 end

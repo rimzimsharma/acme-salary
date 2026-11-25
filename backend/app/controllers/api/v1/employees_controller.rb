@@ -13,6 +13,32 @@ module Api
         end
       end
 
+      def update
+        employee = Employee.find(params[:id])
+        if employee.update(employee_params)
+          render json: { data: EmployeeSerializer.call(employee) }
+        else
+          render json: { errors: employee.errors.to_hash }, status: :unprocessable_entity
+        end
+      end
+
+      # Soft delete: HR keeps records of people who have left.
+      def destroy
+        employee = Employee.find(params[:id])
+        employee.deactivate!
+        render json: { data: EmployeeSerializer.call(employee) }
+      end
+
+      def filter_options
+        render json: {
+          countries: Employee.distinct.order(:country).pluck(:country),
+          departments: Employee.distinct.order(:department).pluck(:department),
+          job_titles: Employee.distinct.order(:job_title).pluck(:job_title),
+          seniorities: Employee::SENIORITIES,
+          currencies: Employee::CURRENCIES
+        }
+      end
+
       def show
         render json: { data: EmployeeSerializer.call(Employee.find(params[:id])) }
       end
