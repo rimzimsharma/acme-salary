@@ -16,3 +16,11 @@ describe("formatMoney", () => {
     expect(formatMoney(85000, "CAD")).toBe("CA$85,000");
   });
 });
+
+describe("formatDeviation", () => {
+  it("signs the percentage so direction is obvious", () => {
+    expect(formatDeviation(104)).toBe("+104%");
+    expect(formatDeviation(-52)).toBe("-52%");
+    expect(formatDeviation(0)).toBe("0%");
+  });
+});
