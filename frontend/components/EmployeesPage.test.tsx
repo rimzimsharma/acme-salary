@@ -208,4 +208,48 @@ describe("EmployeesPage", () => {
       expect(screen.getByRole("dialog")).toHaveTextContent("Editing Asha Rao");
     });
   });
+
+  describe("deactivating", () => {
+    it("asks for confirmation, then deactivates and refreshes", async () => {
+      vi.mocked(api.deactivateEmployee).mockResolvedValue({ ...asha, active: false });
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+
+      await userEvent.click(screen.getByRole("button", { name: "Deactivate Asha Rao" }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(/Deactivate Asha Rao\?/)).toBeInTheDocument();
+      expect(api.deactivateEmployee).not.toHaveBeenCalled(); // nothing happens until confirmed
+
+      vi.mocked(api.listEmployees).mockClear();
+      await userEvent.click(within(dialog).getByRole("button", { name: "Deactivate" }));
+
+      await waitFor(() => expect(api.deactivateEmployee).toHaveBeenCalledWith(1));
+      await waitFor(() => expect(api.listEmployees).toHaveBeenCalled());
+      expect(await screen.findByText("Asha Rao was deactivated")).toBeInTheDocument();
+    });
+
+    it("does nothing when the user cancels", async () => {
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      await userEvent.click(screen.getByRole("button", { name: "Deactivate Asha Rao" }));
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel" }));
+      expect(api.deactivateEmployee).not.toHaveBeenCalled();
+    });
+
+    it("is not offered for people who have already left", async () => {
+      vi.mocked(api.listEmployees).mockResolvedValue(page([{ ...asha, active: false }]));
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      expect(screen.queryByRole("button", { name: "Deactivate Asha Rao" })).not.toBeInTheDocument();
+    });
+
+    it("reports a failure instead of silently doing nothing", async () => {
+      vi.mocked(api.deactivateEmployee).mockRejectedValue(new ApiError(404, "Employee not found"));
+      renderWithProviders(<EmployeesPage />);
+      await screen.findByText("Asha Rao");
+      await userEvent.click(screen.getByRole("button", { name: "Deactivate Asha Rao" }));
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Deactivate" }));
+      expect(await screen.findByText("Employee not found")).toBeInTheDocument();
+    });
+  });
 });

@@ -1,10 +1,10 @@
 "use client";
 
-import { Alert, Badge, Button, Group, NativeSelect, Pagination, Table, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
+import { Alert, Badge, Button, Group, Modal, NativeSelect, Pagination, Table, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useEffect, useState } from "react";
-import { getFilterOptions, listEmployees } from "@/lib/api";
+import { deactivateEmployee, getFilterOptions, listEmployees } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import type { Employee, EmployeeSearchParams, FilterOptions, PageMeta } from "@/lib/types";
 import { EmployeeForm } from "./EmployeeForm";
@@ -18,6 +18,7 @@ export function EmployeesPage() {
   const [debouncedSearch] = useDebouncedValue(search.trim(), 300);
   const [filters, setFilters] = useState({ country: "", department: "", seniority: "", status: "active" });
   const [options, setOptions] = useState<FilterOptions | null>(null);
+  const [toDeactivate, setToDeactivate] = useState<Employee | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | undefined>(undefined);
   const [page, setPage] = useState(1);
@@ -55,6 +56,19 @@ export function EmployeesPage() {
     notifications.show({ message: "Employee saved", color: "green" });
   };
 
+  const confirmDeactivate = async () => {
+    const employee = toDeactivate;
+    if (!employee) return;
+    setToDeactivate(null);
+    try {
+      await deactivateEmployee(employee.id);
+      setAttempt((n) => n + 1);
+      notifications.show({ message: `${employee.full_name} was deactivated`, color: "green" });
+    } catch (error) {
+      notifications.show({ message: error instanceof Error ? error.message : "Could not deactivate", color: "red" });
+    }
+  };
+
   const toggleSort = (column: string) => {
     setSort((current) => ({ column, dir: current?.column === column && current.dir === "asc" ? "desc" : "asc" }));
     setPage(1);
@@ -69,6 +83,15 @@ export function EmployeesPage() {
         <Title order={1}>Employees</Title>
         <Button onClick={() => { setEditing(undefined); setFormOpen(true); }}>Add employee</Button>
       </Group>
+      <Modal opened={toDeactivate !== null} onClose={() => setToDeactivate(null)} title="Deactivate employee" transitionProps={{ duration: 0 }}>
+        <Text>
+          Deactivate {toDeactivate?.full_name}? They stay on record but no longer count towards headcount or payroll insights.
+        </Text>
+        <Group justify="flex-end" mt="lg">
+          <Button variant="default" onClick={() => setToDeactivate(null)}>Cancel</Button>
+          <Button color="red" onClick={confirmDeactivate}>Deactivate</Button>
+        </Group>
+      </Modal>
       <EmployeeForm opened={formOpen} employee={editing} onClose={() => setFormOpen(false)} onSaved={handleSaved} />
       <Group align="flex-end" mb="md" wrap="wrap">
         <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} />
@@ -132,6 +155,11 @@ export function EmployeesPage() {
                   >
                     Edit
                   </Button>
+                  {e.active && (
+                    <Button size="compact-sm" variant="subtle" color="red" aria-label={`Deactivate ${e.full_name}`} onClick={() => setToDeactivate(e)}>
+                      Deactivate
+                    </Button>
+                  )}
                 </Table.Td>
               </Table.Tr>
             ))}
