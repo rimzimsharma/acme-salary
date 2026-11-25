@@ -34,4 +34,16 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     create_employee(PEER_ATTRS.merge(annual_salary: 300_000))
     assert_empty Insights::Outliers.call
   end
+
+  test "peers must share country, title and seniority" do
+    group_with(100_000)
+    create_employee(PEER_ATTRS.merge(country: "India", currency: "INR", annual_salary: 8_300_000)) # alone in India
+    create_employee(PEER_ATTRS.merge(seniority: "senior", annual_salary: 400_000)) # alone at senior
+    assert_empty Insights::Outliers.call
+  end
+
+  test "people who have left are neither judged nor used as peers" do
+    group_with(200_000).deactivate!
+    assert_empty Insights::Outliers.call
+  end
 end
