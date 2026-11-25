@@ -1,3 +1,4 @@
-export function formatMoney(amount: number, currency: string): string {
+export function formatMoney(amount: number | null | undefined, currency: string): string {
+  if (amount === null || amount === undefined) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
 }
