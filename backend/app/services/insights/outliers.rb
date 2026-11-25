@@ -16,7 +16,9 @@ module Insights
         usd.filter_map do |employee, salary|
           next unless salary > median * HIGH || salary < median * LOW
 
-          { id: employee.id, salary_usd: salary, peer_median_usd: median, direction: salary > median ? :above : :below,
+          { id: employee.id, full_name: employee.full_name, job_title: employee.job_title,
+            country: employee.country, seniority: employee.seniority, currency: employee.currency,
+            annual_salary: employee.annual_salary, salary_usd: salary, peer_median_usd: median, direction: salary > median ? :above : :below,
             deviation_pct: ((salary - median) * 100.0 / median).round }
         end
       end

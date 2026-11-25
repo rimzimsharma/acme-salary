@@ -55,4 +55,12 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     assert_equal [250_000, 30_000, 160_000], all.map { |r| r[:salary_usd] }
     assert_equal [250_000], Insights::Outliers.call(limit: 1).map { |r| r[:salary_usd] }
   end
+
+  test "each outlier carries enough detail to display without another lookup" do
+    group_with(200_000, job_title: "Software Engineer")
+    row = Insights::Outliers.call.first
+    employee = Employee.find(row[:id])
+    assert_equal [employee.full_name, employee.job_title, employee.country, employee.seniority, "USD", 200_000],
+                 row.values_at(:full_name, :job_title, :country, :seniority, :currency, :annual_salary)
+  end
 end
