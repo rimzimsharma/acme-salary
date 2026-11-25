@@ -66,3 +66,40 @@ describe("InsightsPage pay breakdown", () => {
     expect(row.getByText("—")).toBeInTheDocument();
   });
 });
+
+describe("InsightsPage dimensions and drill-down", () => {
+  it("switches the grouping between country, department, job title and seniority", async () => {
+    renderWithProviders(<InsightsPage />);
+    await screen.findByRole("table", { name: "Pay by country" });
+
+    vi.mocked(api.getBreakdown).mockResolvedValue([group("Engineering", 3000, 70000)]);
+    await userEvent.click(screen.getByRole("radio", { name: "Department" }));
+
+    expect(await screen.findByRole("table", { name: "Pay by department" })).toBeInTheDocument();
+    expect(api.getBreakdown).toHaveBeenLastCalledWith("department", {});
+
+    await userEvent.click(screen.getByRole("radio", { name: "Job title" }));
+    await waitFor(() => expect(api.getBreakdown).toHaveBeenLastCalledWith("job_title", {}));
+  });
+
+  it("lists seniority from junior up to executive, not by headcount", async () => {
+    renderWithProviders(<InsightsPage />);
+    await screen.findByRole("table", { name: "Pay by country" });
+    vi.mocked(api.getBreakdown).mockResolvedValue([group("mid", 3289, 61000), group("executive", 387, 154000), group("junior", 2305, 43000), group("lead", 1061, 101000), group("senior", 2342, 81000)]);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Seniority" }));
+    const table = await screen.findByRole("table", { name: "Pay by seniority" });
+    const order = within(table).getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[0].textContent);
+    expect(order).toEqual(["junior", "mid", "senior", "lead", "executive"]);
+  });
+
+  it("narrows to one country for non-country groupings, and hides that filter when grouping by country", async () => {
+    renderWithProviders(<InsightsPage />);
+    await screen.findByRole("table", { name: "Pay by country" });
+    expect(screen.queryByLabelText("Within country")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("radio", { name: "Job title" }));
+    await userEvent.selectOptions(await screen.findByLabelText("Within country"), "India");
+    await waitFor(() => expect(api.getBreakdown).toHaveBeenLastCalledWith("job_title", { country: "India" }));
+  });
+});

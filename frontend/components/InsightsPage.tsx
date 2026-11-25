@@ -1,19 +1,42 @@
 "use client";
 
-import { Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { getBreakdown, getSummary } from "@/lib/api";
+import { getBreakdown, getFilterOptions, getSummary } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import type { BreakdownGroup, Summary } from "@/lib/types";
+import type { BreakdownDimension, BreakdownGroup, FilterOptions, Summary } from "@/lib/types";
+
+const DIMENSIONS: { value: BreakdownDimension; label: string }[] = [
+  { value: "country", label: "Country" },
+  { value: "department", label: "Department" },
+  { value: "job_title", label: "Job title" },
+  { value: "seniority", label: "Seniority" },
+];
+const SENIORITY_ORDER = ["junior", "mid", "senior", "lead", "executive"];
 
 export function InsightsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [groups, setGroups] = useState<BreakdownGroup[]>([]);
+  const [dimension, setDimension] = useState<BreakdownDimension>("country");
+  const [country, setCountry] = useState("");
+  const [options, setOptions] = useState<FilterOptions | null>(null);
+  const dimensionLabel = DIMENSIONS.find((d) => d.value === dimension)!.label;
+  const drillCountry = dimension === "country" ? "" : country; // a country filter is meaningless when grouping by country
 
   useEffect(() => {
     getSummary().then(setSummary);
-    getBreakdown("country", {}).then(setGroups);
+    getFilterOptions().then(setOptions).catch(() => setOptions(null));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getBreakdown(dimension, drillCountry ? { country: drillCountry } : {}).then((result) => {
+      if (!cancelled) setGroups(dimension === "seniority" ? sortBySeniority(result) : result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dimension, drillCountry]);
 
   return (
     <>
@@ -34,13 +57,34 @@ export function InsightsPage() {
           </Text>
         </>
       )}
-      <Title order={2} size="h3" mb="sm">
-        Pay by country
-      </Title>
-      <BreakdownTable caption="Pay by country" label="Country" groups={groups} />
+      <Group justify="space-between" align="flex-end" mb="sm" wrap="wrap">
+        <Title order={2} size="h3">
+          Pay by {dimensionLabel.toLowerCase()}
+        </Title>
+        <Group align="flex-end">
+          {dimension !== "country" && (
+            <NativeSelect
+              label="Within country"
+              value={country}
+              onChange={(e) => setCountry(e.currentTarget.value)}
+              data={[{ value: "", label: "All countries" }, ...(options?.countries ?? []).map((c) => ({ value: c, label: c }))]}
+            />
+          )}
+          <SegmentedControl
+            aria-label="Group pay by"
+            value={dimension}
+            onChange={(v) => setDimension(v as BreakdownDimension)}
+            data={DIMENSIONS}
+          />
+        </Group>
+      </Group>
+      <BreakdownTable caption={`Pay by ${dimensionLabel.toLowerCase()}`} label={dimensionLabel} groups={groups} />
     </>
   );
 }
+
+const sortBySeniority = (groups: BreakdownGroup[]) =>
+  [...groups].sort((a, b) => SENIORITY_ORDER.indexOf(a.key) - SENIORITY_ORDER.indexOf(b.key));
 
 function BreakdownTable({ caption, label, groups }: { caption: string; label: string; groups: BreakdownGroup[] }) {
   return (
