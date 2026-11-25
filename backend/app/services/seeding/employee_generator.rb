@@ -35,7 +35,7 @@ module Seeding
     NOISE = (0.88..1.12) # individual variation around the band
     ACTIVE_SHARE = 0.94
     OUTLIER_SHARE = 0.01
-    OUTLIER_FACTORS = [0.5, 1.8].freeze # paid far below / far above peers
+    OUTLIER_FACTORS = [ 0.5, 1.8 ].freeze # paid far below / far above peers
 
     FIRST_NAMES = %w[Aarav Priya Rohan Ananya Vikram Neha Arjun Kavya Liam Olivia Noah Emma Oliver Amelia
                      James Sophia Lucas Mia Ethan Chloe Hana Kenji Yuki Sakura Hiro Lena Jonas Greta Felix Marta
@@ -90,7 +90,7 @@ module Seeding
             SENIORITIES.fetch(seniority)[:multiplier] * info[:pay] * rng.rand(NOISE)
       usd *= OUTLIER_FACTORS.sample(random: rng) if outlier
       local = usd * CurrencyRates::PER_USD.fetch(info[:currency])
-      [(local / info[:round]).round * info[:round], info[:round]].max
+      [ (local / info[:round]).round * info[:round], info[:round] ].max
     end
 
     def weighted(rng, weights)

@@ -21,7 +21,7 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "country", json["by"]
     assert_equal %w[India Japan], json["groups"].map { |g| g["key"] }.sort
     india = json["groups"].find { |g| g["key"] == "India" }
-    assert_equal [1, 100_000, "INR"], [india["headcount"], india["usd"]["median"], india["local"]["currency"]]
+    assert_equal [ 1, 100_000, "INR" ], [ india["headcount"], india["usd"]["median"], india["local"]["currency"] ]
   end
 
   test "GET breakdown with an unknown dimension is a 400, not a 500" do
@@ -36,7 +36,7 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
     create_employee(country: "India", job_title: "Recruiter")
     create_employee(country: "Japan", currency: "JPY", job_title: "Accountant")
     get "/api/v1/insights/breakdown", params: { by: "job_title", country: "India" }
-    assert_equal ["Recruiter"], json["groups"].map { |g| g["key"] }
+    assert_equal [ "Recruiter" ], json["groups"].map { |g| g["key"] }
   end
 
   test "GET outliers lists people paid far from their peers, honouring limit" do
@@ -45,7 +45,7 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
     create_employee(annual_salary: 20_000, currency: "USD", country: "United States", full_name: "Very Low")
     get "/api/v1/insights/outliers"
     assert_response :success
-    assert_equal ["Very High", "Very Low"], json["outliers"].map { |o| o["full_name"] }
+    assert_equal [ "Very High", "Very Low" ], json["outliers"].map { |o| o["full_name"] }
     get "/api/v1/insights/outliers", params: { limit: 1 }
     assert_equal 1, json["outliers"].size
   end
@@ -57,6 +57,6 @@ class Api::V1::InsightsControllerTest < ActionDispatch::IntegrationTest
       get "/api/v1/insights/outliers", params: { limit: 0 }
       get "/api/v1/insights/outliers"
     end
-    assert_equal [{ limit: 200 }, { limit: 1 }, {}], seen
+    assert_equal [ { limit: 200 }, { limit: 1 }, {} ], seen
   end
 end

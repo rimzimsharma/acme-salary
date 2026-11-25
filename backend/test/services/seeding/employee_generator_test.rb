@@ -15,7 +15,7 @@ class Seeding::EmployeeGeneratorTest < ActiveSupport::TestCase
   test "every generated row passes Employee validations" do
     # The seeder bulk-inserts without validations, so this is the safety net.
     invalid = rows.map { |attrs| Employee.new(attrs.except(:outlier)) }.reject(&:valid?)
-    assert_empty invalid.map { |e| [e.email, e.errors.full_messages] }
+    assert_empty invalid.map { |e| [ e.email, e.errors.full_messages ] }
   end
 
   test "same seed gives identical data; different seed differs" do
@@ -82,9 +82,9 @@ class Seeding::EmployeeGeneratorTest < ActiveSupport::TestCase
 
   test "outliers really are far from the band for their peers" do
     data = rows(count: 8_000)
-    peers = data.reject { |r| r[:outlier] }.group_by { |r| [r[:country], r[:job_title], r[:seniority]] }
+    peers = data.reject { |r| r[:outlier] }.group_by { |r| [ r[:country], r[:job_title], r[:seniority] ] }
     far = data.select { |r| r[:outlier] }.count do |r|
-      group = peers[[r[:country], r[:job_title], r[:seniority]]]
+      group = peers[[ r[:country], r[:job_title], r[:seniority] ]]
       next false if group.blank?
       median = group.map { |p| p[:annual_salary] }.sort[group.size / 2]
       ratio = r[:annual_salary].fdiv(median)

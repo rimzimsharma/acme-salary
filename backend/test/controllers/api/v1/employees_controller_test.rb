@@ -7,7 +7,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     create_employee(full_name: "Asha Rao")
     get "/api/v1/employees"
     assert_response :success
-    assert_equal ["Asha Rao"], json["data"].map { |e| e["full_name"] }
+    assert_equal [ "Asha Rao" ], json["data"].map { |e| e["full_name"] }
     assert_equal({ "page" => 1, "per_page" => 25, "total" => 1, "total_pages" => 1 }, json["meta"])
   end
 
@@ -17,7 +17,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     create_employee(country: "Japan", currency: "JPY", full_name: "Kenji C")
     create_employee(country: "India", full_name: "Kenji D")
     get "/api/v1/employees", params: { country: "Japan", q: "kenji", sort: "full_name", dir: "desc", page: 2, per_page: 2 }
-    assert_equal ["Kenji A"], json["data"].map { |e| e["full_name"] }
+    assert_equal [ "Kenji A" ], json["data"].map { |e| e["full_name"] }
     assert_equal({ "page" => 2, "per_page" => 2, "total" => 3, "total_pages" => 2 }, json["meta"])
   end
 
@@ -73,7 +73,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     employee = create_employee(annual_salary: 2_000_000)
     patch "/api/v1/employees/#{employee.id}", params: { employee: { annual_salary: 2_500_000, job_title: "Staff Engineer" } }
     assert_response :success
-    assert_equal [2_500_000, "Staff Engineer"], [employee.reload.annual_salary, employee.job_title]
+    assert_equal [ 2_500_000, "Staff Engineer" ], [ employee.reload.annual_salary, employee.job_title ]
     assert_equal 2_500_000, json["data"]["annual_salary"]
   end
 
@@ -81,7 +81,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     employee = create_employee(annual_salary: 2_000_000)
     patch "/api/v1/employees/#{employee.id}", params: { employee: { annual_salary: 0 } }
     assert_response :unprocessable_entity
-    assert_equal ["must be greater than 0"], json["errors"]["annual_salary"]
+    assert_equal [ "must be greater than 0" ], json["errors"]["annual_salary"]
     assert_equal 2_000_000, employee.reload.annual_salary
   end
 
@@ -108,7 +108,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     get "/api/v1/employees"
     assert_empty json["data"]
     get "/api/v1/employees", params: { status: "inactive" }
-    assert_equal ["Gone Soon"], json["data"].map { |e| e["full_name"] }
+    assert_equal [ "Gone Soon" ], json["data"].map { |e| e["full_name"] }
   end
 
   test "GET filter_options lists distinct values for the UI dropdowns, sorted" do
@@ -119,7 +119,7 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal %w[India Japan], json["countries"]
     assert_equal %w[Engineering Sales], json["departments"]
-    assert_equal ["Sales Manager", "Software Engineer"], json["job_titles"]
+    assert_equal [ "Sales Manager", "Software Engineer" ], json["job_titles"]
     assert_equal Employee::SENIORITIES, json["seniorities"]
     assert_equal Employee::CURRENCIES, json["currencies"]
   end

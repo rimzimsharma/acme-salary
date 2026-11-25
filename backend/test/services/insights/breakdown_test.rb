@@ -26,14 +26,14 @@ class Insights::BreakdownTest < ActiveSupport::TestCase
     create_employee(department: "Sales", country: "India", currency: "INR", annual_salary: 8_300_000)
     create_employee(department: "Sales", country: "United States", currency: "USD", annual_salary: 120_000)
     usd = row(breakdown("department"), "Sales")[:usd]
-    assert_equal [100_000, 120_000, 220_000], [usd[:min], usd[:max], usd[:total]]
+    assert_equal [ 100_000, 120_000, 220_000 ], [ usd[:min], usd[:max], usd[:total] ]
   end
 
   test "people who have left are excluded from every figure" do
     create_employee(country: "India", annual_salary: 8_300_000)
     create_employee(country: "India", annual_salary: 83_000_000).deactivate!
     india = row(breakdown("country"), "India")
-    assert_equal [1, 100_000], [india[:headcount], india[:usd][:max]]
+    assert_equal [ 1, 100_000 ], [ india[:headcount], india[:usd][:max] ]
   end
 
   test "only whitelisted grouping columns are accepted" do
@@ -48,7 +48,7 @@ class Insights::BreakdownTest < ActiveSupport::TestCase
     create_employee(country: "Japan", currency: "JPY", job_title: "Recruiter", department: "HR")
     rows = breakdown("job_title", country: "India")
     assert_equal %w[Accountant Recruiter], rows.map { |r| r[:key] }.sort
-    assert_equal [1, 1], rows.map { |r| r[:headcount] }
+    assert_equal [ 1, 1 ], rows.map { |r| r[:headcount] }
     assert_equal 1, row(breakdown("job_title", country: "India", department: "HR"), "Recruiter")[:headcount]
   end
 

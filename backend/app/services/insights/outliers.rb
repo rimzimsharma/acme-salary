@@ -14,13 +14,13 @@ module Insights
 
     def self.peer_groups
       Employee.active
-              .group_by { |e| [e.country, e.job_title, e.seniority] }
+              .group_by { |e| [ e.country, e.job_title, e.seniority ] }
               .values
               .select { |peers| peers.size >= MIN_PEERS }
     end
 
     def self.outliers_in(peers)
-      salaries = peers.to_h { |e| [e, CurrencyRates.to_usd(e.annual_salary, e.currency)] }
+      salaries = peers.to_h { |e| [ e, CurrencyRates.to_usd(e.annual_salary, e.currency) ] }
       median = Statistics.call(salaries.values)[:median]
       salaries.filter_map { |employee, salary| row_for(employee, salary, median) if outlier?(salary, median) }
     end

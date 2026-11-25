@@ -20,7 +20,7 @@ module Insights
       rows = Employee.active.where(@filters).pluck(@by, :currency, :annual_salary)
       rows.group_by(&:first)
           .map { |key, members| summarize(key, members) }
-          .sort_by { |group| [-group[:headcount], group[:key].to_s] }
+          .sort_by { |group| [ -group[:headcount], group[:key].to_s ] }
     end
 
     private

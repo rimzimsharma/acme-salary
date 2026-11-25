@@ -79,7 +79,7 @@ class EmployeeTest < ActiveSupport::TestCase
     kept = build.tap(&:save!)
     gone = build(email: "gone@acme.test").tap(&:save!)
     gone.deactivate!
-    assert_equal [kept], Employee.active.to_a
-    assert_equal [gone], Employee.inactive.to_a
+    assert_equal [ kept ], Employee.active.to_a
+    assert_equal [ gone ], Employee.inactive.to_a
   end
 end

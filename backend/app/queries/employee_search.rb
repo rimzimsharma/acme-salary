@@ -31,13 +31,13 @@ class EmployeeSearch
   end
 
   def page
-    @page ||= [@params[:page].to_i, 1].max
+    @page ||= [ @params[:page].to_i, 1 ].max
   end
 
   def per_page
     @per_page ||= begin
       requested = @params[:per_page].to_i
-      requested.positive? ? [requested, MAX_PER_PAGE].min : DEFAULT_PER_PAGE
+      requested.positive? ? [ requested, MAX_PER_PAGE ].min : DEFAULT_PER_PAGE
     end
   end
 
