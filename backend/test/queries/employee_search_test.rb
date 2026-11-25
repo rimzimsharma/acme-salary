@@ -102,4 +102,12 @@ class EmployeeSearchTest < ActiveSupport::TestCase
     create_employee
     assert_equal 4, search(country: "Japan", per_page: 2).total
   end
+
+  test "people with the same value in the sort column keep a stable order (by id) so paging never repeats or skips" do
+    first = create_employee(full_name: "Same Name")
+    second = create_employee(full_name: "Same Name")
+    third = create_employee(full_name: "Same Name")
+    assert_equal [first, second, third], search.records.to_a
+    assert_equal [second], search(page: 2, per_page: 1).records.to_a
+  end
 end
