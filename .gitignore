@@ -1,0 +1,19 @@
+# Rails
+backend/log/*
+backend/tmp/*
+backend/storage/*
+backend/db/*.sqlite3*
+backend/.bundle
+backend/vendor/bundle
+!backend/log/.keep
+!backend/tmp/.keep
+!backend/storage/.keep
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+# OS / editor
+.DS_Store
+.env*
+backend/config/master.key
+*.key
