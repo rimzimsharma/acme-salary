@@ -104,3 +104,23 @@ describe("EmployeeForm server errors", () => {
     expect(await screen.findByText("Could not reach the server. Is the API running?")).toBeInTheDocument();
   });
 });
+
+describe("EmployeeForm (edit)", () => {
+  it("opens prefilled, then saves changes with updateEmployee", async () => {
+    const { onSaved } = open({ employee: saved });
+    expect(screen.getByRole("heading", { name: "Edit employee" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Full name/)).toHaveValue("Asha Rao");
+    expect(screen.getByLabelText(/Annual salary/)).toHaveValue("2400000");
+    expect(screen.getByLabelText(/Currency/)).toHaveValue("INR");
+    expect(screen.getByLabelText(/Hire date/)).toHaveValue("2022-03-01");
+
+    await userEvent.clear(screen.getByLabelText(/Annual salary/));
+    await userEvent.type(screen.getByLabelText(/Annual salary/), "2500000");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(api.updateEmployee).toHaveBeenCalledTimes(1));
+    expect(api.updateEmployee).toHaveBeenCalledWith(9, expect.objectContaining({ annual_salary: 2500000, full_name: "Asha Rao" }));
+    expect(api.createEmployee).not.toHaveBeenCalled();
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+  });
+});

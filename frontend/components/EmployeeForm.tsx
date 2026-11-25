@@ -2,8 +2,8 @@
 
 import { Alert, Button, Group, Modal, NativeSelect, NumberInput, Stack, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useState } from "react";
-import { ValidationError, createEmployee } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { ValidationError, createEmployee, updateEmployee } from "@/lib/api";
 import type { Employee, EmployeeInput, Seniority } from "@/lib/types";
 
 const required = (value: unknown) => (value === "" || value === null || value === undefined ? "Required" : null);
@@ -12,16 +12,29 @@ const SENIORITIES: Seniority[] = ["junior", "mid", "senior", "lead", "executive"
 
 interface Props {
   opened: boolean;
+  /** When given, the form edits this employee; otherwise it adds a new one. */
+  employee?: Employee;
   onClose: () => void;
   onSaved: (employee: Employee) => void;
 }
 
-export function EmployeeForm({ opened, onClose, onSaved }: Props) {
+const BLANK = {
+  full_name: "", email: "", job_title: "", department: "", country: "", currency: "USD",
+  annual_salary: "" as number | "", seniority: "mid", hire_date: "",
+};
+
+const valuesFor = (employee?: Employee) =>
+  employee
+    ? {
+        full_name: employee.full_name, email: employee.email, job_title: employee.job_title,
+        department: employee.department, country: employee.country, currency: employee.currency,
+        annual_salary: employee.annual_salary, seniority: employee.seniority, hire_date: employee.hire_date,
+      }
+    : BLANK;
+
+export function EmployeeForm({ opened, employee, onClose, onSaved }: Props) {
   const form = useForm({
-    initialValues: {
-      full_name: "", email: "", job_title: "", department: "", country: "", currency: "USD",
-      annual_salary: "" as number | "", seniority: "mid", hire_date: "",
-    },
+    initialValues: valuesFor(employee),
     validate: {
       full_name: (v) => required(v.trim()),
       email: (v) => required(v.trim()) ?? (/^\S+@\S+\.\S+$/.test(v.trim()) ? null : "Enter a valid email address"),
@@ -33,6 +46,16 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
     },
   });
 
+  // Start from a clean slate each time the dialog opens (for a new or a different employee).
+  useEffect(() => {
+    if (!opened) return;
+    form.setValues(valuesFor(employee));
+    form.resetDirty(valuesFor(employee));
+    form.clearErrors();
+    setFormError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, employee?.id]);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -40,7 +63,8 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
     setFormError(null);
     setSaving(true);
     try {
-      const saved = await createEmployee({ ...values, annual_salary: Number(values.annual_salary) } as EmployeeInput);
+      const input = { ...values, annual_salary: Number(values.annual_salary) } as EmployeeInput;
+      const saved = employee ? await updateEmployee(employee.id, input) : await createEmployee(input);
       onSaved(saved);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -55,7 +79,7 @@ export function EmployeeForm({ opened, onClose, onSaved }: Props) {
   });
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Add employee" transitionProps={{ duration: 0 }}>
+    <Modal opened={opened} onClose={onClose} title={employee ? "Edit employee" : "Add employee"} transitionProps={{ duration: 0 }}>
       <form onSubmit={submit}>
         <Stack>
           {formError && <Alert color="red">{formError}</Alert>}
