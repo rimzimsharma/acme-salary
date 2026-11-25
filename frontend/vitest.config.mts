@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
+    env: { TZ: "Asia/Kolkata" }, // a fixed non-UTC zone keeps date tests identical on every machine
     coverage: {
       provider: "v8",
       include: ["components/**", "lib/**"],
