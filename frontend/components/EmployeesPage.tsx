@@ -1,13 +1,13 @@
 "use client";
 
-import { Table, Title } from "@mantine/core";
+import { Table, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { listEmployees } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import type { Employee } from "@/lib/types";
 
 export function EmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Employee[] | null>(null); // null while loading
 
   useEffect(() => {
     listEmployees().then((result) => setEmployees(result.data));
@@ -18,6 +18,9 @@ export function EmployeesPage() {
       <Title order={1} mb="md">
         Employees
       </Title>
+      {employees === null && <Text>Loading employees…</Text>}
+      {employees?.length === 0 && <Text>No employees match your filters.</Text>}
+      {employees && employees.length > 0 && (
       <Table>
         <Table.Thead>
           <Table.Tr>
@@ -41,6 +44,7 @@ export function EmployeesPage() {
           ))}
         </Table.Tbody>
       </Table>
+      )}
     </>
   );
 }

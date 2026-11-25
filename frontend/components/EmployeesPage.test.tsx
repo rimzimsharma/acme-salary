@@ -34,4 +34,17 @@ describe("EmployeesPage", () => {
     expect(screen.getByText("₹2,400,000")).toBeInTheDocument();
     expect(screen.getByText("$28,916")).toBeInTheDocument();
   });
+
+  it("shows a loading message until the first response arrives", async () => {
+    vi.mocked(api.listEmployees).mockReturnValue(new Promise(() => {}));
+    renderWithProviders(<EmployeesPage />);
+    expect(await screen.findByText("Loading employees…")).toBeInTheDocument();
+  });
+
+  it("explains when nothing matches instead of showing an empty table", async () => {
+    vi.mocked(api.listEmployees).mockResolvedValue(page([]));
+    renderWithProviders(<EmployeesPage />);
+    expect(await screen.findByText("No employees match your filters.")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
 });
