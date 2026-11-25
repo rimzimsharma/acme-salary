@@ -27,4 +27,45 @@ class Api::V1::EmployeesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 100_000, json["data"].first["annual_salary_usd"]
     assert_equal 8_300_000, json["data"].first["annual_salary"]
   end
+
+  test "GET show returns one employee, including inactive ones" do
+    employee = create_employee(full_name: "Asha Rao").tap(&:deactivate!)
+    get "/api/v1/employees/#{employee.id}"
+    assert_response :success
+    assert_equal "Asha Rao", json["data"]["full_name"]
+    assert_equal false, json["data"]["active"]
+  end
+
+  test "GET show for a missing id is a JSON 404" do
+    get "/api/v1/employees/0"
+    assert_response :not_found
+    assert_equal "Employee not found", json["error"]
+  end
+
+  VALID = { full_name: "Asha Rao", email: "asha@acme.test", job_title: "Engineer", department: "Engineering",
+            country: "India", currency: "INR", annual_salary: 2_400_000, seniority: "mid", hire_date: "2022-03-01" }.freeze
+
+  test "POST create makes an employee and returns 201 with Location" do
+    assert_difference "Employee.count", 1 do
+      post "/api/v1/employees", params: { employee: VALID }
+    end
+    assert_response :created
+    assert_equal "Asha Rao", json["data"]["full_name"]
+    assert_match %r{/api/v1/employees/\d+\z}, response.headers["Location"]
+  end
+
+  test "POST create with bad data returns 422 and field errors, saving nothing" do
+    assert_no_difference "Employee.count" do
+      post "/api/v1/employees", params: { employee: VALID.merge(email: "nope", annual_salary: -1, seniority: "wizard") }
+    end
+    assert_response :unprocessable_entity
+    assert_equal %w[annual_salary email seniority], json["errors"].keys.sort
+  end
+
+  test "POST create ignores attributes it does not permit (id, active)" do
+    post "/api/v1/employees", params: { employee: VALID.merge(id: 999, active: false) }
+    assert_response :created
+    assert_not_equal 999, json["data"]["id"]
+    assert_equal true, json["data"]["active"]
+  end
 end
