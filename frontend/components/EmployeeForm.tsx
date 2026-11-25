@@ -4,6 +4,7 @@ import { Alert, Button, Group, Modal, NativeSelect, NumberInput, Stack, TextInpu
 import { useForm } from "@mantine/form";
 import { useState } from "react";
 import { ValidationError, createEmployee, updateEmployee } from "@/lib/api";
+import { todayLocal } from "@/lib/dates";
 import type { Employee, EmployeeInput, Seniority } from "@/lib/types";
 
 const required = (value: unknown) => (value === "" || value === null || value === undefined ? "Required" : null);
@@ -51,7 +52,7 @@ function FormBody({ employee, onClose, onSaved }: Omit<Props, "opened">) {
       department: (v) => required(v.trim()),
       country: (v) => required(v.trim()),
       annual_salary: (v) => required(v) ?? (Number(v) > 0 ? null : "Must be greater than 0"),
-      hire_date: (v) => required(v) ?? (v > new Date().toISOString().slice(0, 10) ? "Hire date cannot be in the future" : null),
+      hire_date: (v) => required(v) ?? (v > todayLocal() ? "Hire date cannot be in the future" : null),
     },
   });
 

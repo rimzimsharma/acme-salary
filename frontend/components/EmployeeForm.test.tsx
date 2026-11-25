@@ -7,6 +7,9 @@ import type { Employee } from "@/lib/types";
 import { renderWithProviders } from "@/test-utils";
 import { EmployeeForm } from "./EmployeeForm";
 
+// "Today" is pinned so the future-date rule is tested at its exact boundary.
+vi.mock("@/lib/dates", () => ({ todayLocal: () => "2030-01-01" }));
+
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   createEmployee: vi.fn(),
@@ -122,5 +125,24 @@ describe("EmployeeForm (edit)", () => {
     expect(api.updateEmployee).toHaveBeenCalledWith(9, expect.objectContaining({ annual_salary: 2500000, full_name: "Asha Rao" }));
     expect(api.createEmployee).not.toHaveBeenCalled();
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
+  });
+});
+
+describe("EmployeeForm hire date boundary", () => {
+  it("accepts today's local date and the day before, rejects the day after", async () => {
+    open();
+    await fillValidForm();
+    for (const [date, accepted] of [["2030-01-01", true], ["2029-12-31", true], ["2030-01-02", false]] as const) {
+      vi.mocked(api.createEmployee).mockClear();
+      await userEvent.clear(screen.getByLabelText(/Hire date/));
+      await userEvent.type(screen.getByLabelText(/Hire date/), date);
+      await userEvent.click(screen.getByRole("button", { name: "Save" }));
+      if (accepted) {
+        await waitFor(() => expect(api.createEmployee).toHaveBeenCalledTimes(1));
+      } else {
+        expect(await screen.findByText("Hire date cannot be in the future")).toBeInTheDocument();
+        expect(api.createEmployee).not.toHaveBeenCalled();
+      }
+    }
   });
 });
