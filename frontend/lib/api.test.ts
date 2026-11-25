@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, listEmployees } from "./api";
+import { ApiError, ValidationError, createEmployee, listEmployees } from "./api";
+import type { EmployeeInput } from "./types";
 
 function mockFetch(status: number, body: unknown) {
   const fn = vi.fn().mockResolvedValue({ ok: status >= 200 && status < 300, status, json: async () => body });
@@ -39,5 +40,30 @@ describe("error handling", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     await expect(listEmployees()).rejects.toThrow("Could not reach the server");
     await expect(listEmployees()).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+const input: EmployeeInput = {
+  full_name: "Asha Rao", email: "asha@acme.test", job_title: "Engineer", department: "Engineering",
+  country: "India", currency: "INR", annual_salary: 2400000, seniority: "mid", hire_date: "2022-03-01",
+};
+
+describe("createEmployee", () => {
+  it("POSTs the employee as JSON and returns the created record", async () => {
+    const fetchMock = mockFetch(201, { data: { id: 7, ...input } });
+    const created = await createEmployee(input);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:3001/api/v1/employees");
+    expect(init.method).toBe("POST");
+    expect(init.headers["Content-Type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({ employee: input });
+    expect(created.id).toBe(7);
+  });
+
+  it("surfaces per-field validation errors from a 422", async () => {
+    mockFetch(422, { errors: { email: ["is invalid"], annual_salary: ["must be greater than 0"] } });
+    const failure = await createEmployee(input).catch((e) => e);
+    expect(failure).toBeInstanceOf(ValidationError);
+    expect(failure.errors).toEqual({ email: ["is invalid"], annual_salary: ["must be greater than 0"] });
   });
 });
