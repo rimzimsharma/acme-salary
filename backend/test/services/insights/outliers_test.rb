@@ -79,4 +79,15 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     group_with(69_999, job_title: "Product Manager")
     assert_equal [ 69_999, 140_001 ], Insights::Outliers.call.map { |r| r[:salary_usd] }.sort
   end
+
+  test "deviation percentage is rounded to the nearest whole percent, not truncated" do
+    group_with(166_667) # 66.667% above the 100k median
+    assert_equal [ 67 ], Insights::Outliers.call.map { |r| r[:deviation_pct] }
+  end
+
+  test "outliers with equal deviation come out in a stable order (by id)" do
+    first = group_with(200_000, job_title: "Accountant")
+    second = group_with(200_000, job_title: "Recruiter")
+    assert_equal [ first.id, second.id ], Insights::Outliers.call.map { |r| r[:id] }
+  end
 end

@@ -9,7 +9,7 @@ module Insights
 
     def self.call(limit: DEFAULT_LIMIT)
       rows = peer_groups.flat_map { |peers| outliers_in(peers) }
-      rows.sort_by { |row| -row[:deviation_pct].abs }.first(limit)
+      rows.sort_by { |row| [ -row[:deviation_pct].abs, row[:id] ] }.first(limit)
     end
 
     def self.peer_groups
