@@ -25,4 +25,10 @@ class Insights::SummaryTest < ActiveSupport::TestCase
     assert_equal 1, summary[:inactive_count]
     assert_equal 3, summary[:headcount] # the leaver is not counted as headcount
   end
+
+  test "an empty database yields zeros and nil figures, not an error" do
+    summary = Insights::Summary.call
+    assert_equal [0, 0, 0, 0], summary.values_at(:headcount, :inactive_count, :countries, :total_payroll_usd)
+    assert_equal({ min: nil, median: nil, avg: nil, max: nil }, summary[:usd])
+  end
 end
