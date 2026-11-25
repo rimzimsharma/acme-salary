@@ -63,4 +63,20 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     assert_equal [employee.full_name, employee.job_title, employee.country, employee.seniority, "USD", 200_000],
                  row.values_at(:full_name, :job_title, :country, :seniority, :currency, :annual_salary)
   end
+
+  test "a peer group of exactly five is judged; four is not" do
+    4.times { create_employee(PEER_ATTRS.merge(annual_salary: 100_000)) }
+    create_employee(PEER_ATTRS.merge(annual_salary: 300_000))
+    assert_equal [300_000], Insights::Outliers.call.map { |r| r[:salary_usd] } # 5 people: judged
+  end
+
+  test "thresholds are exclusive: exactly 1.4x or 0.7x the peer median is not flagged, just beyond is" do
+    group_with(140_000, job_title: "Accountant")
+    group_with(70_000, job_title: "Recruiter")
+    assert_empty Insights::Outliers.call
+
+    group_with(140_001, job_title: "Designer")
+    group_with(69_999, job_title: "Product Manager")
+    assert_equal [69_999, 140_001], Insights::Outliers.call.map { |r| r[:salary_usd] }.sort
+  end
 end
