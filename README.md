@@ -4,6 +4,7 @@ Web software for an HR Manager to maintain salary data for ~10,000 employees acr
 "how do we pay people?" without spreadsheets.
 
 - **Requirements (written before building):** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
+- **Plan and decision log:** [docs/PLAN.md](docs/PLAN.md)
 - **Design, trade-offs, performance:** [docs/DESIGN.md](docs/DESIGN.md)
 - **Architecture diagrams:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Index of all artifacts the brief asks for:** [docs/ARTIFACTS.md](docs/ARTIFACTS.md)

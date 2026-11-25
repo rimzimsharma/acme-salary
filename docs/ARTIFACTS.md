@@ -5,7 +5,7 @@ The assessment brief asks for artifacts that explain thinking and approach. Each
 | Artifact the brief lists | Where it is |
 |---|---|
 | Requirements document | [REQUIREMENTS.md](REQUIREMENTS.md) (also as [Word](Salary_Management_Requirements.docx)); written before any code was built |
-| Planning or design notes | [DESIGN.md](DESIGN.md) |
+| Planning or design notes | [PLAN.md](PLAN.md) (approach, sequence, decision log, risks); [DESIGN.md](DESIGN.md) (how it is built) |
 | Architecture diagrams | [ARCHITECTURE.md](ARCHITECTURE.md): system overview, list flow, currency comparison, data model |
 | Prompts or instructions used with AI tools | [AI_USAGE.md](AI_USAGE.md) (instructions given, mistakes made and caught); the agents in [`.claude/agents/`](../.claude/agents): `quality-reviewer` (audits the repo against the brief) and `rubocop-checker` (Ruby style); and the `/rubocop` command in [`.claude/skills/rubocop/`](../.claude/skills/rubocop/SKILL.md) |
 | Trade-off explanations | [DESIGN.md](DESIGN.md): data model, multiple currencies, insights, frontend choices, known limitations |
