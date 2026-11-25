@@ -17,3 +17,5 @@ frontend/out/
 .env*
 backend/config/master.key
 *.key
+backend/coverage/
+frontend/coverage/
