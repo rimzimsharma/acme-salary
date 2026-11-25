@@ -1,11 +1,18 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils";
 import * as api from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import type { Employee } from "@/lib/types";
 import { EmployeesPage } from "./EmployeesPage";
 
-vi.mock("@/lib/api");
+// Mock the network functions but keep the real error classes (ApiError, ValidationError).
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api")>()),
+  listEmployees: vi.fn(),
+  getFilterOptions: vi.fn(),
+}));
 
 const asha: Employee = {
   id: 1, full_name: "Asha Rao", email: "asha@acme.test", job_title: "Software Engineer", department: "Engineering",
@@ -46,5 +53,17 @@ describe("EmployeesPage", () => {
     renderWithProviders(<EmployeesPage />);
     expect(await screen.findByText("No employees match your filters.")).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("shows the problem and lets the user retry when the API call fails", async () => {
+    vi.mocked(api.listEmployees)
+      .mockRejectedValueOnce(new ApiError(0, "Could not reach the server. Is the API running?"))
+      .mockResolvedValueOnce(page([asha]));
+    renderWithProviders(<EmployeesPage />);
+
+    expect(await screen.findByText("Could not reach the server. Is the API running?")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Asha Rao")).toBeInTheDocument();
+    expect(screen.queryByText(/Could not reach/)).not.toBeInTheDocument();
   });
 });
