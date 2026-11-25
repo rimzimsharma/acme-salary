@@ -1,3 +1,5 @@
-export default function EmployeesPage() {
-  return <h1>Employees</h1>;
+import { EmployeesPage } from "@/components/EmployeesPage";
+
+export default function Page() {
+  return <EmployeesPage />;
 }
