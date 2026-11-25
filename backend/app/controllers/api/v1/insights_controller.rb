@@ -1,6 +1,10 @@
 module Api
   module V1
     class InsightsController < ApplicationController
+      rescue_from ArgumentError do |error|
+        render json: { error: error.message }, status: :bad_request
+      end
+
       def summary
         render json: Insights::Summary.call
       end
