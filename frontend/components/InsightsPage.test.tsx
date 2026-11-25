@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import type { BreakdownGroup, Outlier, Summary } from "@/lib/types";
 import { renderWithProviders } from "@/test-utils";
 import { InsightsPage } from "./InsightsPage";
@@ -134,5 +135,24 @@ describe("InsightsPage outliers", () => {
   it("explains how outliers are chosen", async () => {
     renderWithProviders(<InsightsPage />);
     expect(await screen.findByText(/same country, job title and seniority/)).toBeInTheDocument();
+  });
+});
+
+describe("InsightsPage failures", () => {
+  it("shows what went wrong and recovers when the user retries", async () => {
+    vi.mocked(api.getSummary).mockRejectedValueOnce(new ApiError(0, "Could not reach the server. Is the API running?"));
+    renderWithProviders(<InsightsPage />);
+
+    expect(await screen.findByText("Could not reach the server. Is the API running?")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("9,384")).toBeInTheDocument();
+    expect(screen.queryByText(/Could not reach/)).not.toBeInTheDocument();
+  });
+
+  it("also reports a failing breakdown or outlier request", async () => {
+    vi.mocked(api.getOutliers).mockRejectedValueOnce(new ApiError(500, "Request failed (500)"));
+    renderWithProviders(<InsightsPage />);
+    expect(await screen.findByText("Request failed (500)")).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Alert, Badge, Button, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { getBreakdown, getFilterOptions, getOutliers, getSummary } from "@/lib/api";
 import { formatDeviation, formatMoney } from "@/lib/format";
@@ -21,30 +21,44 @@ export function InsightsPage() {
   const [country, setCountry] = useState("");
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [outliers, setOutliers] = useState<Outlier[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const fail = (e: Error) => setError(e.message);
   const dimensionLabel = DIMENSIONS.find((d) => d.value === dimension)!.label;
   const drillCountry = dimension === "country" ? "" : country; // a country filter is meaningless when grouping by country
 
   useEffect(() => {
-    getSummary().then(setSummary);
-    getFilterOptions().then(setOptions).catch(() => setOptions(null));
-    getOutliers(25).then(setOutliers);
-  }, []);
+    setError(null);
+    getSummary().then(setSummary).catch(fail);
+    getFilterOptions().then(setOptions).catch(() => setOptions(null)); // dropdown values are optional
+    getOutliers(25).then(setOutliers).catch(fail);
+  }, [attempt]);
 
   useEffect(() => {
     let cancelled = false;
-    getBreakdown(dimension, drillCountry ? { country: drillCountry } : {}).then((result) => {
-      if (!cancelled) setGroups(dimension === "seniority" ? sortBySeniority(result) : result);
-    });
+    getBreakdown(dimension, drillCountry ? { country: drillCountry } : {})
+      .then((result) => {
+        if (!cancelled) setGroups(dimension === "seniority" ? sortBySeniority(result) : result);
+      })
+      .catch((e: Error) => !cancelled && fail(e));
     return () => {
       cancelled = true;
     };
-  }, [dimension, drillCountry]);
+  }, [dimension, drillCountry, attempt]);
 
   return (
     <>
       <Title order={1} mb="md">
         Insights
       </Title>
+      {error && (
+        <Alert color="red" title="Could not load insights" mb="md">
+          <Text>{error}</Text>
+          <Button mt="sm" variant="light" color="red" onClick={() => setAttempt((n) => n + 1)}>
+            Try again
+          </Button>
+        </Alert>
+      )}
       {summary && (
         <>
           <SimpleGrid cols={{ base: 2, md: 4 }} mb="xs">
