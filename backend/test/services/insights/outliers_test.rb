@@ -28,4 +28,10 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     group_with(75_000, job_title: "Recruiter")
     assert_empty Insights::Outliers.call
   end
+
+  test "ignores peer groups too small to judge" do
+    3.times { create_employee(PEER_ATTRS.merge(annual_salary: 100_000)) }
+    create_employee(PEER_ATTRS.merge(annual_salary: 300_000))
+    assert_empty Insights::Outliers.call
+  end
 end
