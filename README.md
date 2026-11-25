@@ -5,6 +5,7 @@ Web software for an HR Manager to maintain salary data for ~10,000 employees acr
 
 - **Requirements (written before building):** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
 - **Design, trade-offs, performance:** [docs/DESIGN.md](docs/DESIGN.md)
+- **Architecture diagrams:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **How AI was used (and where it was wrong):** [docs/AI_USAGE.md](docs/AI_USAGE.md)
 
 ## What it does
