@@ -44,4 +44,26 @@ class Seeding::EmployeeGeneratorTest < ActiveSupport::TestCase
   test "hire dates are never in the future" do
     assert rows.all? { |r| r[:hire_date] <= TODAY }
   end
+
+  def usd_average(data)
+    data.sum { |r| CurrencyRates.to_usd(r[:annual_salary], r[:currency]) }.fdiv(data.size)
+  end
+
+  test "pay rises with seniority (compared in USD)" do
+    data = rows(count: 6_000)
+    by_level = data.group_by { |r| r[:seniority] }.transform_values { |g| usd_average(g) }
+    ordered = Employee::SENIORITIES.map { |level| by_level.fetch(level) }
+    ordered.each_cons(2) { |lower, higher| assert_operator lower, :<, higher, "pay should strictly rise with seniority: #{by_level}" }
+  end
+
+  test "the same role pays less in lower-cost countries (USD terms)" do
+    data = rows(count: 6_000)
+    us = usd_average(data.select { |r| r[:country] == "United States" })
+    india = usd_average(data.select { |r| r[:country] == "India" })
+    assert_in_delta 0.25, india / us, 0.05 # India pay band is 25% of the US band
+  end
+
+  test "salaries are rounded to a realistic step, not odd numbers" do
+    rows(count: 200).each { |r| assert_equal 0, r[:annual_salary] % 500, "#{r[:currency]} #{r[:annual_salary]}" }
+  end
 end
