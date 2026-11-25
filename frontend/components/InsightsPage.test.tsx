@@ -156,3 +156,14 @@ describe("InsightsPage failures", () => {
     expect(await screen.findByText("Request failed (500)")).toBeInTheDocument();
   });
 });
+
+describe("InsightsPage chart", () => {
+  it("charts median USD pay for the current grouping, with the table as its text equivalent", async () => {
+    renderWithProviders(<InsightsPage />);
+    expect(await screen.findByRole("img", { name: "Bar chart of median pay in USD by country" })).toBeInTheDocument();
+
+    vi.mocked(api.getBreakdown).mockResolvedValue([group("Sales", 10, 50000)]);
+    await userEvent.click(screen.getByRole("radio", { name: "Department" }));
+    expect(await screen.findByRole("img", { name: "Bar chart of median pay in USD by department" })).toBeInTheDocument();
+  });
+});

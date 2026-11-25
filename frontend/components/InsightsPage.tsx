@@ -1,6 +1,7 @@
 "use client";
 
-import { Alert, Badge, Button, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, NativeSelect, Paper, SegmentedControl, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { BarChart } from "@mantine/charts";
 import { useEffect, useState } from "react";
 import { getBreakdown, getFilterOptions, getOutliers, getSummary } from "@/lib/api";
 import { formatDeviation, formatMoney } from "@/lib/format";
@@ -94,6 +95,18 @@ export function InsightsPage() {
           />
         </Group>
       </Group>
+      {groups.length > 0 && (
+        <Box role="img" aria-label={`Bar chart of median pay in USD by ${dimensionLabel.toLowerCase()}`} mb="md">
+          <BarChart
+            h={280}
+            data={groups.map((g) => ({ name: g.key, median: g.usd.median ?? 0 }))}
+            dataKey="name"
+            series={[{ name: "median", label: "Median pay (USD)", color: "blue.6" }]}
+            valueFormatter={(v) => formatMoney(v, "USD")}
+            tickLine="y"
+          />
+        </Box>
+      )}
       <BreakdownTable caption={`Pay by ${dimensionLabel.toLowerCase()}`} label={dimensionLabel} groups={groups} />
 
       <Title order={2} size="h3" mt="xl" mb={4}>
