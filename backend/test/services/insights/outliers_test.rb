@@ -16,4 +16,10 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     assert_equal :above, found[:direction]
     assert_equal [200_000, 100_000, 100], [found[:salary_usd], found[:peer_median_usd], found[:deviation_pct]]
   end
+
+  test "flags someone paid far below their peers" do
+    low = group_with(50_000)
+    found = Insights::Outliers.call.first
+    assert_equal [low.id, :below, -50], [found[:id], found[:direction], found[:deviation_pct]]
+  end
 end
