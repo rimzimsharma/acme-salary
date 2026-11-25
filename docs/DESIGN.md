@@ -70,11 +70,11 @@ offered within one country, because raw local amounts are not comparable.
 
 ## Testing approach
 
-Built test-first in small red/green steps; each commit is one step and the suite is green at every commit.
+Built test-first in small red/green steps; each commit is one step and the suite was run before each commit.
 
 | Layer | Tests | Notes |
 |---|---|---|
-| Model, query objects, insights, seeding | Minitest, 107 tests | Run in about a second against a file-based SQLite test database |
+| Model, query objects, insights, seeding | Minitest, 110 tests | Run in about a second against a file-based SQLite test database |
 | API | Integration tests per endpoint | Status codes, payloads, strong params, CORS |
 | Frontend logic | Vitest | Formatters, query builder, API client with mocked `fetch` |
 | Frontend components | Testing Library | Behaviour by role and label: loading, empty, error, search, filters, paging, sorting, add/edit/deactivate, insights |

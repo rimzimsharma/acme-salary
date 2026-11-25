@@ -15,7 +15,7 @@ steered the work step by step and reviewed it; the AI wrote code, tests, commits
 3. **Two explicit course corrections from the human** during the build, both followed from then on:
    - *"it should be more focused on TDD focused"*: from that point every behaviour was built as one failing
      test, the minimum code to pass, then a commit; larger batches were split up.
-   - *"do incremental commits"*: one behaviour per commit, suite green at every commit.
+   - *"do incremental commits"*: one behaviour per commit, suite run before each commit.
 4. **The loop used for each behaviour:** write one failing test, run it and see it fail for the right reason,
    write the minimum code, run the whole suite, commit. Tests that passed on first run are labelled as
    *guards* in their commit messages rather than presented as red/green.
@@ -31,6 +31,8 @@ steered the work step by step and reviewed it; the AI wrote code, tests, commits
 | Several backend behaviours were first batched into one commit | The human's incremental-commits instruction | Later work was one behaviour per commit |
 | New ESLint React rules rejected effects that set state synchronously | Running ESLint (not just the tests) before declaring the frontend done | Refactored to derived state with all tests unchanged |
 | Two commands piped `git commit` output through `head`, which the organisation's commit tooling forbids | The tooling blocked them | Re-ran without the pipe |
+| A second review found more unpinned behaviour: five of seven currency rates, the rounding of the outlier percentage, tie order for equal outliers, the stale-response guard on the employee list, and the zero-salary rule | The `quality-reviewer` agent again, mutating copies of the code | Added a test for each and confirmed each mutation now fails. Writing the zero-salary test exposed a real bug: the form silently turned a salary of 0 into 1 and saved it |
+| The hire-date check compared the user's local date with the UTC date, so early-morning users east of UTC could be told today was in the future | The same review | Added `todayLocal()`; its tests pin the time zone and fail against the old UTC version |
 | Outlier thresholds, the dollar rounding, the `limit` cap and the paging tie-break could each be changed without a single test failing, despite ~99% coverage | An independent review by the `quality-reviewer` agent, which applied one-line mutations to a copy of the code | Added boundary tests (exactly 5 peers, exactly 1.4x / 0.7x, rounding, tie-break, limit clamp) and re-ran all seven mutations: every one now fails the suite |
 
 ## What the human decided
@@ -41,7 +43,7 @@ within one country, soft delete) are recorded with reasons in [DESIGN.md](DESIGN
 
 ## What was verified by running, not assumed
 
-- Backend 107 tests and frontend 60 tests pass (about 99.5% and 97.8% line coverage); TypeScript and ESLint are clean; the production build succeeds.
+- Backend 110 tests and frontend 66 tests pass (99.6% and 97.8% line coverage); RuboCop reports no offenses; TypeScript and ESLint are clean; the production build succeeds.
 - End to end against 10,000 seeded employees: pages load, CORS works from the UI origin, and
   create, update, invalid create (422) and deactivate behave as designed.
 - Latencies in [DESIGN.md](DESIGN.md) were measured, not estimated.

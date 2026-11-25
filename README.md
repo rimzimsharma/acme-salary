@@ -49,14 +49,14 @@ FRONTEND_ORIGINS=https://ui.example.com bin/rails server    # allowed browser or
 ## Tests
 
 ```bash
-cd backend  && bin/rails test      # 107 tests, runs in about a second
-cd frontend && npm test            # 60 tests
+cd backend  && bin/rails test      # 110 tests, runs in about a second
+cd frontend && npm test            # 66 tests
 cd frontend && npx tsc --noEmit && npx eslint .
 cd backend  && bundle exec rubocop        # Ruby style (Rails omakase); add -a to auto-fix safe offenses
 
 # Coverage reports
-cd backend  && COVERAGE=1 bin/rails test     # line + branch, HTML in backend/coverage (about 99.5% / 97.6%)
-cd frontend && npm run test:coverage         # HTML in frontend/coverage (about 97.8% lines)
+cd backend  && COVERAGE=1 bin/rails test     # line + branch, HTML in backend/coverage (99.6% line / 97.4% branch)
+cd frontend && npm run test:coverage         # HTML in frontend/coverage (97.8% line / 94.9% branch)
 ```
 
 ## API
