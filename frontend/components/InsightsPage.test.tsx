@@ -45,3 +45,24 @@ describe("InsightsPage headline figures", () => {
     expect(screen.getByText(/616 people who have left are not counted/)).toBeInTheDocument();
   });
 });
+
+describe("InsightsPage pay breakdown", () => {
+  it("starts with pay by country: headcount, USD median and range, plus local-currency median", async () => {
+    renderWithProviders(<InsightsPage />);
+    const table = within(await screen.findByRole("table", { name: "Pay by country" }));
+
+    const indiaRow = within(table.getByRole("row", { name: /India/ }));
+    expect(indiaRow.getByText("2,183")).toBeInTheDocument();
+    expect(indiaRow.getByText("$20,000")).toBeInTheDocument(); // USD median
+    expect(indiaRow.getByText("$10,000 – $30,000")).toBeInTheDocument(); // USD min–max
+    expect(indiaRow.getByText("₹1,660,000")).toBeInTheDocument(); // local median
+    expect(api.getBreakdown).toHaveBeenCalledWith("country", {});
+  });
+
+  it("shows a dash for local pay when a group mixes currencies", async () => {
+    vi.mocked(api.getBreakdown).mockResolvedValue([group("Engineering", 100, 60000, null)]);
+    renderWithProviders(<InsightsPage />);
+    const row = within(await screen.findByRole("row", { name: /Engineering/ }));
+    expect(row.getByText("—")).toBeInTheDocument();
+  });
+});
