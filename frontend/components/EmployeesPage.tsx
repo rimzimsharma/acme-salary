@@ -1,11 +1,11 @@
 "use client";
 
-import { Alert, Button, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Group, NativeSelect, Table, Text, TextInput, Title } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useState } from "react";
-import { listEmployees } from "@/lib/api";
+import { getFilterOptions, listEmployees } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import type { Employee, EmployeeSearchParams } from "@/lib/types";
+import type { Employee, EmployeeSearchParams, FilterOptions } from "@/lib/types";
 
 type State = { status: "loading" | "ready" | "error"; employees: Employee[]; error?: string };
 
@@ -14,8 +14,14 @@ export function EmployeesPage() {
   const [attempt, setAttempt] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search.trim(), 300);
-  const params: EmployeeSearchParams = { q: debouncedSearch };
+  const [filters, setFilters] = useState({ country: "", department: "", seniority: "", status: "active" });
+  const [options, setOptions] = useState<FilterOptions | null>(null);
+  const params: EmployeeSearchParams = { q: debouncedSearch, ...filters, status: filters.status as EmployeeSearchParams["status"] };
   const paramsKey = JSON.stringify(params);
+
+  useEffect(() => {
+    getFilterOptions().then(setOptions).catch(() => setOptions(null)); // filters stay usable without dropdown values
+  }, []);
 
   useEffect(() => {
     let cancelled = false; // ignore responses that arrive after a newer request started
@@ -35,7 +41,18 @@ export function EmployeesPage() {
       <Title order={1} mb="md">
         Employees
       </Title>
-      <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} mb="md" />
+      <Group align="flex-end" mb="md" wrap="wrap">
+        <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} />
+        <FilterSelect label="Country" value={filters.country} values={options?.countries} onChange={(v) => setFilters({ ...filters, country: v })} />
+        <FilterSelect label="Department" value={filters.department} values={options?.departments} onChange={(v) => setFilters({ ...filters, department: v })} />
+        <FilterSelect label="Seniority" value={filters.seniority} values={options?.seniorities} onChange={(v) => setFilters({ ...filters, seniority: v })} />
+        <NativeSelect
+          label="Status"
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.currentTarget.value })}
+          data={[{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }, { value: "all", label: "All" }]}
+        />
+      </Group>
       {status === "error" && (
         <Alert color="red" title="Could not load employees" mb="md">
           <Text>{error}</Text>
@@ -72,5 +89,16 @@ export function EmployeesPage() {
         </Table>
       )}
     </>
+  );
+}
+
+function FilterSelect({ label, value, values = [], onChange }: { label: string; value: string; values?: string[]; onChange: (v: string) => void }) {
+  return (
+    <NativeSelect
+      label={label}
+      value={value}
+      onChange={(e) => onChange(e.currentTarget.value)}
+      data={[{ value: "", label: `All` }, ...values.map((v) => ({ value: v, label: v }))]}
+    />
   );
 }

@@ -78,4 +78,28 @@ describe("EmployeesPage", () => {
     const queries = vi.mocked(api.listEmployees).mock.calls.map(([params]) => params?.q);
     expect(queries).not.toContain("s"); // intermediate keystrokes were debounced away
   });
+
+  it("filters by country, department, seniority and status using options from the API", async () => {
+    renderWithProviders(<EmployeesPage />);
+    await screen.findByText("Asha Rao");
+
+    await userEvent.selectOptions(await screen.findByLabelText("Country"), "Japan");
+    await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ country: "Japan" })));
+
+    await userEvent.selectOptions(screen.getByLabelText("Department"), "Sales");
+    await userEvent.selectOptions(screen.getByLabelText("Seniority"), "senior");
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "all");
+    await waitFor(() =>
+      expect(api.listEmployees).toHaveBeenLastCalledWith(
+        expect.objectContaining({ country: "Japan", department: "Sales", seniority: "senior", status: "all" }),
+      ),
+    );
+  });
+
+  it("starts on active employees only", async () => {
+    renderWithProviders(<EmployeesPage />);
+    await screen.findByText("Asha Rao");
+    expect(screen.getByLabelText("Status")).toHaveValue("active");
+    expect(api.listEmployees).toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
+  });
 });
