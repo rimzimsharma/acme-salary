@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, ValidationError, createEmployee, deactivateEmployee, listEmployees, updateEmployee } from "./api";
+import { ApiError, ValidationError, createEmployee, deactivateEmployee, listEmployees, updateEmployee, getBreakdown, getFilterOptions, getOutliers, getSummary } from "./api";
 import type { EmployeeInput } from "./types";
 
 function mockFetch(status: number, body: unknown) {
@@ -88,5 +88,34 @@ describe("updateEmployee and deactivateEmployee", () => {
     const result = await deactivateEmployee(7);
     expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
     expect(result.active).toBe(false);
+  });
+});
+
+describe("read-only endpoints for dropdowns and insights", () => {
+  const url = (fetchMock: ReturnType<typeof mockFetch>) => fetchMock.mock.calls[0][0];
+
+  it("getFilterOptions", async () => {
+    const fetchMock = mockFetch(200, { countries: ["India"] });
+    expect((await getFilterOptions()).countries).toEqual(["India"]);
+    expect(url(fetchMock)).toBe("http://localhost:3001/api/v1/employees/filter_options");
+  });
+
+  it("getSummary", async () => {
+    const fetchMock = mockFetch(200, { headcount: 3 });
+    expect((await getSummary()).headcount).toBe(3);
+    expect(url(fetchMock)).toBe("http://localhost:3001/api/v1/insights/summary");
+  });
+
+  it("getBreakdown sends the dimension and any drill-down filters, returning the groups", async () => {
+    const fetchMock = mockFetch(200, { by: "job_title", groups: [{ key: "Recruiter" }] });
+    const groups = await getBreakdown("job_title", { country: "India", department: "" });
+    expect(url(fetchMock)).toBe("http://localhost:3001/api/v1/insights/breakdown?by=job_title&country=India");
+    expect(groups).toEqual([{ key: "Recruiter" }]);
+  });
+
+  it("getOutliers passes the limit and unwraps the list", async () => {
+    const fetchMock = mockFetch(200, { outliers: [{ id: 1 }] });
+    expect(await getOutliers(10)).toEqual([{ id: 1 }]);
+    expect(url(fetchMock)).toBe("http://localhost:3001/api/v1/insights/outliers?limit=10");
   });
 });

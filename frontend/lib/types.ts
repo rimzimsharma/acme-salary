@@ -36,3 +36,49 @@ export interface EmployeeSearchParams {
   page?: number;
   per_page?: number;
 }
+
+export interface FilterOptions {
+  countries: string[];
+  departments: string[];
+  job_titles: string[];
+  seniorities: Seniority[];
+  currencies: string[];
+}
+
+export interface PayFigures {
+  min: number | null;
+  median: number | null;
+  avg: number | null;
+  max: number | null;
+}
+
+export interface Summary {
+  headcount: number;
+  inactive_count: number;
+  countries: number;
+  total_payroll_usd: number;
+  usd: PayFigures;
+}
+
+export type BreakdownDimension = "country" | "department" | "job_title" | "seniority";
+
+export interface BreakdownGroup {
+  key: string;
+  headcount: number;
+  usd: PayFigures & { total: number };
+  local: (PayFigures & { currency: string }) | null;
+}
+
+export interface Outlier {
+  id: number;
+  full_name: string;
+  job_title: string;
+  country: string;
+  seniority: Seniority;
+  currency: string;
+  annual_salary: number;
+  salary_usd: number;
+  peer_median_usd: number;
+  direction: "above" | "below";
+  deviation_pct: number;
+}

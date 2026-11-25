@@ -1,5 +1,8 @@
 import { buildQuery } from "./query";
-import type { Employee, EmployeeInput, EmployeeSearchParams, PageMeta } from "./types";
+import type {
+  BreakdownDimension, BreakdownGroup, Employee, EmployeeInput, EmployeeSearchParams, FilterOptions, Outlier,
+  PageMeta, Summary,
+} from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -56,4 +59,23 @@ export async function updateEmployee(id: number, changes: Partial<EmployeeInput>
 /** Soft delete: the employee is kept but flagged inactive. */
 export async function deactivateEmployee(id: number): Promise<Employee> {
   return (await request<{ data: Employee }>(`/api/v1/employees/${id}`, { method: "DELETE" })).data;
+}
+
+export function getFilterOptions() {
+  return request<FilterOptions>("/api/v1/employees/filter_options");
+}
+
+export function getSummary() {
+  return request<Summary>("/api/v1/insights/summary");
+}
+
+export async function getBreakdown(
+  by: BreakdownDimension,
+  filters: Partial<Record<BreakdownDimension, string>> = {},
+): Promise<BreakdownGroup[]> {
+  return (await request<{ groups: BreakdownGroup[] }>(`/api/v1/insights/breakdown${buildQuery({ by, ...filters })}`)).groups;
+}
+
+export async function getOutliers(limit?: number): Promise<Outlier[]> {
+  return (await request<{ outliers: Outlier[] }>(`/api/v1/insights/outliers${buildQuery({ limit })}`)).outliers;
 }
