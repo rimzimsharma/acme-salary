@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils";
@@ -65,5 +65,17 @@ describe("EmployeesPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Asha Rao")).toBeInTheDocument();
     expect(screen.queryByText(/Could not reach/)).not.toBeInTheDocument();
+  });
+
+  it("searches by name or email after the user pauses typing, not on every keystroke", async () => {
+    renderWithProviders(<EmployeesPage />);
+    await screen.findByText("Asha Rao");
+    vi.mocked(api.listEmployees).mockClear();
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Search" }), "sharma");
+
+    await waitFor(() => expect(api.listEmployees).toHaveBeenLastCalledWith(expect.objectContaining({ q: "sharma" })));
+    const queries = vi.mocked(api.listEmployees).mock.calls.map(([params]) => params?.q);
+    expect(queries).not.toContain("s"); // intermediate keystrokes were debounced away
   });
 });

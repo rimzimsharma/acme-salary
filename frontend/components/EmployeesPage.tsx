@@ -1,27 +1,32 @@
 "use client";
 
-import { Alert, Button, Table, Text, Title } from "@mantine/core";
+import { Alert, Button, Table, Text, TextInput, Title } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { listEmployees } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import type { Employee } from "@/lib/types";
+import type { Employee, EmployeeSearchParams } from "@/lib/types";
 
 type State = { status: "loading" | "ready" | "error"; employees: Employee[]; error?: string };
 
 export function EmployeesPage() {
   const [state, setState] = useState<State>({ status: "loading", employees: [] });
   const [attempt, setAttempt] = useState(0);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search.trim(), 300);
+  const params: EmployeeSearchParams = { q: debouncedSearch };
+  const paramsKey = JSON.stringify(params);
 
   useEffect(() => {
     let cancelled = false; // ignore responses that arrive after a newer request started
     setState((s) => ({ ...s, status: "loading", error: undefined }));
-    listEmployees()
+    listEmployees(JSON.parse(paramsKey))
       .then((result) => !cancelled && setState({ status: "ready", employees: result.data }))
       .catch((e: Error) => !cancelled && setState((s) => ({ ...s, status: "error", error: e.message })));
     return () => {
       cancelled = true;
     };
-  }, [attempt]);
+  }, [attempt, paramsKey]);
 
   const { status, employees, error } = state;
 
@@ -30,6 +35,7 @@ export function EmployeesPage() {
       <Title order={1} mb="md">
         Employees
       </Title>
+      <TextInput label="Search" placeholder="Name or email" value={search} onChange={(e) => setSearch(e.currentTarget.value)} mb="md" />
       {status === "error" && (
         <Alert color="red" title="Could not load employees" mb="md">
           <Text>{error}</Text>
