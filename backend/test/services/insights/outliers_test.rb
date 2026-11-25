@@ -22,4 +22,10 @@ class Insights::OutliersTest < ActiveSupport::TestCase
     found = Insights::Outliers.call.first
     assert_equal [low.id, :below, -50], [found[:id], found[:direction], found[:deviation_pct]]
   end
+
+  test "does not flag normal variation" do
+    group_with(115_000)
+    group_with(75_000, job_title: "Recruiter")
+    assert_empty Insights::Outliers.call
+  end
 end
