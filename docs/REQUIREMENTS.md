@@ -12,7 +12,7 @@ Replace the HR team's Excel files with a web app where the HR Manager can mainta
   1. What is the pay range (min / median / max) for a job title in a country?
   2. Which countries and departments cost the most, and how many people are in each?
   3. How does pay progress by seniority level?
-  4. Who is paid unusually high or low relative to peers (same title and country)?
+  4. Who is paid unusually high or low relative to peers (same country, title and seniority)?
 - List pages respond in under 300 ms and insights in under 1 s at 10,000 rows.
 
 ## In scope (v1)

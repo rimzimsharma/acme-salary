@@ -48,9 +48,13 @@ FRONTEND_ORIGINS=https://ui.example.com bin/rails server    # allowed browser or
 ## Tests
 
 ```bash
-cd backend  && bin/rails test      # 102 tests, runs in about a second
-cd frontend && npm test            # 58 tests
+cd backend  && bin/rails test      # 107 tests, runs in about a second
+cd frontend && npm test            # 60 tests
 cd frontend && npx tsc --noEmit && npx eslint .
+
+# Coverage reports
+cd backend  && COVERAGE=1 bin/rails test     # line + branch, HTML in backend/coverage (about 99.5% / 97.6%)
+cd frontend && npm run test:coverage         # HTML in frontend/coverage (about 97.8% lines)
 ```
 
 ## API

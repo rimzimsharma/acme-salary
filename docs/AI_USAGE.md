@@ -40,7 +40,7 @@ within one country, soft delete) are recorded with reasons in [DESIGN.md](DESIGN
 
 ## What was verified by running, not assumed
 
-- Backend 102 tests and frontend 58 tests pass; TypeScript and ESLint are clean; the production build succeeds.
+- Backend 107 tests and frontend 60 tests pass (about 99.5% and 97.8% line coverage); TypeScript and ESLint are clean; the production build succeeds.
 - End to end against 10,000 seeded employees: pages load, CORS works from the UI origin, and
   create, update, invalid create (422) and deactivate behave as designed.
 - Latencies in [DESIGN.md](DESIGN.md) were measured, not estimated.

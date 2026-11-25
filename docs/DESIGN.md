@@ -74,7 +74,7 @@ Built test-first in small red/green steps; each commit is one step and the suite
 
 | Layer | Tests | Notes |
 |---|---|---|
-| Model, query objects, insights, seeding | Minitest, 102 tests | Run in about a second against a file-based SQLite test database |
+| Model, query objects, insights, seeding | Minitest, 107 tests | Run in about a second against a file-based SQLite test database |
 | API | Integration tests per endpoint | Status codes, payloads, strong params, CORS |
 | Frontend logic | Vitest | Formatters, query builder, API client with mocked `fetch` |
 | Frontend components | Testing Library | Behaviour by role and label: loading, empty, error, search, filters, paging, sorting, add/edit/deactivate, insights |
